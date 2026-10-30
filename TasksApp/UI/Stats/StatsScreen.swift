@@ -1,67 +1,57 @@
 import SwiftUI
 import Shared
 
+/// Stats tab. UI only: display-ready stats come from `StatsScreenModel`.
 @MainActor
 struct StatsScreen: View {
-    /// Kotlin `StatsViewModel` (StatsCalculator over repository.state) behind the Swift wrapper.
-    @State private var model: StatsModel
-
-    init(app: AppDependencies) {
-        _model = State(initialValue: app.makeStats())
-    }
+    @State var model: StatsScreenModel
 
     var body: some View {
         NavigationStack {
-            content
-                .navigationTitle("Stats")
-        }
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        // SKIE: Kotlin sealed `StatsUiState` → exhaustive Swift enum.
-        switch onEnum(of: model.state) {
-        case .loading:
-            LoadingView()
-        case .error:
-            LoadErrorView {
-                model.send { $0.onRetry() }
+            Group {
+                switch model.content {
+                case .loading:
+                    LoadingView()
+                case .error:
+                    LoadErrorView { model.retry() }
+                case .loaded(let summary):
+                    StatsSummaryList(summary: summary)
+                }
             }
-        case .loaded(let loaded):
-            statsList(loaded.stats)
+            .navigationTitle("Stats")
         }
     }
+}
 
-    private func statsList(_ stats: TaskStats) -> some View {
+/// Completion percentage + counters.
+struct StatsSummaryList: View {
+    let summary: StatsSummary
+
+    var body: some View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Completed")
                         .font(.headline)
                         .foregroundStyle(Color.secondary)
-                    Text("\(stats.completionPercent)%")
+                    Text(summary.completionText)
                         .font(.system(size: 48, weight: .bold, design: .rounded))
-                    ProgressView(value: Double(stats.completionPercent), total: 100)
+                    ProgressView(value: summary.completionValue, total: 100)
                 }
                 .padding(.vertical, 4)
             }
 
             Section {
-                row("Total", stats.total)
-                row("Done", stats.done)
-                row("Active", stats.active)
-                row("Overdue", stats.overdue)
+                ForEach(summary.totals) { row in
+                    LabeledContent(row.title, value: row.value)
+                }
             }
 
             Section("By priority") {
-                row("High", stats.high)
-                row("Medium", stats.medium)
-                row("Low", stats.low)
+                ForEach(summary.byPriority) { row in
+                    LabeledContent(row.title, value: row.value)
+                }
             }
         }
-    }
-
-    private func row(_ title: String, _ value: Int32) -> some View {
-        LabeledContent(title, value: "\(value)")
     }
 }

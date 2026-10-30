@@ -2,7 +2,9 @@ import Foundation
 import Observation
 import Shared
 
-// SharedViewModel: the ONE Swift wrapper around every Kotlin ViewModel from `shared` (step 4).
+// SharedViewModel: the ONE generic bridge around every Kotlin ViewModel from `shared` (step 4).
+// Screens do not use it directly: each per-screen Swift screen model (`UI/<Screen>/<Screen>ScreenModel`)
+// owns one and turns its `state` into display-ready values, bindings and intents.
 //
 // The screens' logic (filtering, stats, validation, saving) lives in Kotlin
 // (`...shared.presentation`). Swift still has to:
@@ -12,7 +14,7 @@ import Shared
 //      so `uiState` only updates while someone collects it.
 //   2. Destroy the Kotlin ViewModel: iOS has no ViewModelStoreOwner, so `deinit` calls the iosMain
 //      extension `viewModel.clear()` (cancels viewModelScope). Without it the VM leaks coroutines.
-//   3. Forward UI events: `model.send { $0.onRetry() }` (or call `model.viewModel` directly).
+//   3. Forward UI events: `shared.send { $0.onRetry() }` (called by the screen models).
 //
 // Generic over the sequence type `S` instead of naming SKIE's flow class, so the only contract is
 // "an AsyncSequence of UiState" plus a way to read the current `uiState.value`.

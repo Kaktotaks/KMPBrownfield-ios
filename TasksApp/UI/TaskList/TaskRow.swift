@@ -2,31 +2,30 @@ import SwiftUI
 import Shared
 
 struct TaskRow: View {
-    let task: TaskItem
-    let isOverdue: Bool
+    let item: TaskRowItem
     let onToggle: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
             Button(action: onToggle) {
-                Image(systemName: task.isDone ? "checkmark.circle.fill" : "circle")
+                Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
-                    .foregroundStyle(task.isDone ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(item.isDone ? Color.accentColor : Color.secondary)
             }
             // Borderless so tapping the circle doesn't trigger the row's NavigationLink.
             .buttonStyle(.borderless)
-            .accessibilityLabel(task.isDone ? "Mark as active" : "Mark as done")
+            .accessibilityLabel(item.toggleTitle)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(task.title)
-                    .strikethrough(task.isDone)
-                    .foregroundStyle(task.isDone ? Color.secondary : Color.primary)
-                DueDateLine(dueDate: task.dueDate, isOverdue: isOverdue)
+                Text(item.title)
+                    .strikethrough(item.isDone)
+                    .foregroundStyle(item.isDone ? Color.secondary : Color.primary)
+                DueDateLine(dueText: item.dueText, isOverdue: item.isOverdue)
             }
 
             Spacer(minLength: 8)
 
-            PriorityBadge(priority: task.priority)
+            PriorityBadge(priority: item.priority)
         }
         .padding(.vertical, 2)
     }

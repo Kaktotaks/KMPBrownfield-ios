@@ -1,126 +1,99 @@
 import SwiftUI
 import Shared
 
+/// Tasks tab. UI only: state mapping, bindings and navigation factories live in `TaskListScreenModel`.
 @MainActor
 struct TaskListScreen: View {
-    /// Kotlin `TaskListViewModel` (search, filter, sort, toggle, retry) behind the Swift wrapper.
-    @State private var model: TaskListModel
-    /// Search text stays local and is forwarded to Kotlin: `uiState` (stateIn) updates
-    /// asynchronously, and binding a TextField straight to it would make typing jump.
-    @State private var query = ""
-    /// Created when the sheet opens, released (→ `clear()`) when it closes.
-    @State private var newTaskEditor: TaskEditorModel?
-
-    private let app: AppDependencies
-
-    /// Kotlin enums with SKIE are Swift enums, but not `CaseIterable`: the segment/menu order is listed here.
-    private static let statusFilters: [StatusFilter] = [.all, .active, .done]
-    private static let sortOrders: [SortOrder] = [.dueDate, .priority]
-
-    init(app: AppDependencies) {
-        self.app = app
-        _model = State(initialValue: app.makeTaskList())
-    }
+    @State var model: TaskListScreenModel
 
     var body: some View {
         NavigationStack {
-            content
-                .navigationTitle("Tasks")
-                .searchable(text: $query, prompt: "Search tasks")
-                .onChange(of: query) { _, newValue in
-                    model.send { $0.onQueryChange(value: newValue) }
-                }
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Menu {
-                            Picker("Sort", selection: sortBinding) {
-                                ForEach(Self.sortOrders, id: \.self) { order in
-                                    Text(order.displayName).tag(order)
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "arrow.up.arrow.down")
-                        }
-                        .accessibilityLabel("Sort")
+            Group {
+                switch model.content {
+                case .loading:
+                    LoadingView()
+                case .error:
+                    LoadErrorView { model.retry() }
+                case .empty:
+                    VStack(spacing: 0) {
+                        StatusFilterBar(model: model)
+                        ContentUnavailableView("No tasks", systemImage: "checklist")
                     }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            newTaskEditor = app.makeTaskEditor(taskId: nil)
-                        } label: {
-                            Image(systemName: "plus")
-                        }
-                        .accessibilityLabel("New Task")
+                case .loaded(let rows):
+                    VStack(spacing: 0) {
+                        StatusFilterBar(model: model)
+                        TaskRowsList(model: model, rows: rows)
                     }
                 }
-                .navigationDestination(for: Int32.self) { taskId in
-                    TaskDetailScreen(taskId: taskId, app: app)
-                }
-                .sheet(item: $newTaskEditor) { editor in
-                    TaskEditorScreen(model: editor)
-                }
-        }
-    }
-
-    // MARK: - Bindings to Kotlin state (get from uiState, set → Kotlin event)
-
-    private var statusBinding: Binding<StatusFilter> {
-        Binding(
-            get: { model.state.status },
-            set: { value in model.send { $0.onStatusChange(value: value) } }
-        )
-    }
-
-    private var sortBinding: Binding<SortOrder> {
-        Binding(
-            get: { model.state.sort },
-            set: { value in model.send { $0.onSortChange(value: value) } }
-        )
-    }
-
-    // MARK: - Content
-
-    @ViewBuilder
-    private var content: some View {
-        // SKIE: Kotlin sealed `TaskListContent` → exhaustive Swift enum.
-        switch onEnum(of: model.state.content) {
-        case .loading:
-            LoadingView()
-        case .error:
-            LoadErrorView {
-                model.send { $0.onRetry() }
             }
-        case .loaded(let loaded):
-            loadedContent(loaded.tasks)
-        }
-    }
-
-    private func loadedContent(_ tasks: [TaskItem]) -> some View {
-        VStack(spacing: 0) {
-            Picker("Status", selection: statusBinding) {
-                ForEach(Self.statusFilters, id: \.self) { filter in
-                    Text(filter.displayName).tag(filter)
+            .navigationTitle("Tasks")
+            .searchable(text: $model.query, prompt: "Search tasks")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    SortMenu(model: model)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        model.showNewTaskEditor()
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("New Task")
                 }
             }
-            .pickerStyle(.segmented)
+            .navigationDestination(for: Int32.self) { taskId in
+                TaskDetailScreen(model: model.makeDetail(taskId: taskId))
+            }
+            .sheet(item: $model.newTaskEditor) { editor in
+                TaskEditorScreen(model: editor)
+            }
+        }
+    }
+}
+
+/// Segmented "All / Active / Done" filter above the list.
+@MainActor
+struct StatusFilterBar: View {
+    @Bindable var model: TaskListScreenModel
+
+    var body: some View {
+        SegmentedPicker(title: "Status", selection: $model.status, options: model.statusOptions)
             .padding(.horizontal)
             .padding(.vertical, 8)
+    }
+}
 
-            if tasks.isEmpty {
-                ContentUnavailableView("No tasks", systemImage: "checklist")
-            } else {
-                let today = model.state.today
-                // TaskItem is a Kotlin class; identify rows by its Int32 id.
-                List(tasks, id: \.id) { task in
-                    NavigationLink(value: task.id) {
-                        TaskRow(
-                            task: task,
-                            isOverdue: task.isOverdue(today: today),
-                            onToggle: { model.send { $0.onToggle(id: task.id) } }
-                        )
-                    }
+/// Toolbar menu: "Sort by due date" / "Sort by priority".
+@MainActor
+struct SortMenu: View {
+    @Bindable var model: TaskListScreenModel
+
+    var body: some View {
+        Menu {
+            Picker("Sort", selection: $model.sort) {
+                ForEach(model.sortOptions) { option in
+                    Text(option.title).tag(option.value)
                 }
-                .listStyle(.plain)
+            }
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+        }
+        .accessibilityLabel("Sort")
+    }
+}
+
+/// The loaded, non-empty list; rows push the detail screen by task id.
+@MainActor
+struct TaskRowsList: View {
+    let model: TaskListScreenModel
+    let rows: [TaskRowItem]
+
+    var body: some View {
+        List(rows) { row in
+            NavigationLink(value: row.id) {
+                TaskRow(item: row) { model.toggle(id: row.id) }
             }
         }
+        .listStyle(.plain)
     }
 }

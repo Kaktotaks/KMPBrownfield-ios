@@ -4,8 +4,8 @@ import Shared
 /// App-level composition root (replaces the step 2/3 `TaskStore` adapter).
 ///
 /// Owns the single Kotlin `TaskRepository`, the `TaskValidator` and the `DateProvider`, loads the
-/// tasks once on start, and creates the Kotlin ViewModels wrapped in `SharedViewModel`.
-/// It is not observed by SwiftUI: screens observe their own ViewModel's `uiState`.
+/// tasks once on start, and creates the Kotlin ViewModels wrapped in `SharedViewModel` and the
+/// Swift screen models around them. It is not observed by SwiftUI: screens observe their own screen model.
 @MainActor
 final class AppDependencies {
     let repository: TaskRepository
@@ -62,5 +62,24 @@ final class AppDependencies {
     func makeStats() -> StatsModel {
         let vm = StatsViewModel(repository: repository, dateProvider: dateProvider)
         return StatsModel(vm, states: vm.uiState, value: { vm.uiState.value })
+    }
+
+    // MARK: - Screen model factories (what the SwiftUI screens hold)
+
+    func makeTaskListScreenModel() -> TaskListScreenModel {
+        TaskListScreenModel(shared: makeTaskList(), app: self)
+    }
+
+    func makeTaskDetailScreenModel(taskId: Int32) -> TaskDetailScreenModel {
+        TaskDetailScreenModel(shared: makeTaskDetail(taskId: taskId), app: self)
+    }
+
+    /// `taskId == nil` → new task.
+    func makeTaskEditorScreenModel(taskId: Int32?) -> TaskEditorScreenModel {
+        TaskEditorScreenModel(shared: makeTaskEditor(taskId: taskId))
+    }
+
+    func makeStatsScreenModel() -> StatsScreenModel {
+        StatsScreenModel(shared: makeStats())
     }
 }
