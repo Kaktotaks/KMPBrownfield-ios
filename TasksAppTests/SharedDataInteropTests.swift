@@ -60,21 +60,20 @@ final class SharedDataInteropTests: XCTestCase {
         XCTAssertEqual(repository.tasks.map(\.id), [1, 3])
     }
 
-    func testFailingApiGivesErrorStateAndStoreMirrorsIt() async {
+    func testFailingApiGivesErrorStateOnAppLoad() async {
         let repository = TaskRepository(
             api: FakeTaskApi(result: .failure(NSError(domain: "test", code: 1))),
             dateProvider: SystemDateProvider.shared
         )
-        let store = TaskStore(repository: repository)
-        XCTAssertEqual(store.phase, .loading)
+        let app = AppDependencies(repository: repository, dateProvider: SystemDateProvider.shared)
+        XCTAssertTrue(repository.state.value is LoadStateLoading)
 
-        await store.load()
+        await app.loadIfNeeded()
 
-        XCTAssertTrue(repository.state.value is LoadStateError)
-        // The store observes repository.state with `for await`; let that loop run first.
-        await Task.yield()
-        try? await Task.sleep(nanoseconds: 50_000_000)
-        XCTAssertEqual(store.phase, .error)
-        XCTAssertTrue(store.tasks.isEmpty)
+        // Kotlin maps the thrown NSError to LoadState.Error (no Swift error escapes).
+        guard case .error = onEnum(of: repository.state.value) else {
+            return XCTFail("expected Error")
+        }
+        XCTAssertTrue(repository.tasks.isEmpty)
     }
 }

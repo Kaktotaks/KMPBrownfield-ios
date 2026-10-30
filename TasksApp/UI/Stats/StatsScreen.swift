@@ -3,10 +3,11 @@ import Shared
 
 @MainActor
 struct StatsScreen: View {
-    @State private var viewModel: StatsViewModel
+    /// Kotlin `StatsViewModel` (StatsCalculator over repository.state) behind the Swift wrapper.
+    @State private var model: StatsModel
 
-    init(store: TaskStore, dateProvider: any DateProvider) {
-        _viewModel = State(initialValue: StatsViewModel(store: store, dateProvider: dateProvider))
+    init(app: AppDependencies) {
+        _model = State(initialValue: app.makeStats())
     }
 
     var body: some View {
@@ -18,15 +19,16 @@ struct StatsScreen: View {
 
     @ViewBuilder
     private var content: some View {
-        switch viewModel.phase {
+        // SKIE: Kotlin sealed `StatsUiState` → exhaustive Swift enum.
+        switch onEnum(of: model.state) {
         case .loading:
             LoadingView()
         case .error:
             LoadErrorView {
-                viewModel.retry()
+                model.send { $0.onRetry() }
             }
-        case .loaded:
-            statsList(viewModel.stats)
+        case .loaded(let loaded):
+            statsList(loaded.stats)
         }
     }
 

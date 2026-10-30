@@ -5,24 +5,23 @@ import Shared
 /// Each tab owns its own NavigationStack.
 @MainActor
 struct RootView: View {
-    @Environment(TaskStore.self) private var store
-    let dateProvider: any DateProvider
+    let app: AppDependencies
 
     var body: some View {
         TabView {
-            TaskListScreen(store: store, dateProvider: dateProvider)
+            TaskListScreen(app: app)
                 .tabItem {
                     Label("Tasks", systemImage: "list.bullet")
                 }
 
-            StatsScreen(store: store, dateProvider: dateProvider)
+            StatsScreen(app: app)
                 .tabItem {
                     Label("Stats", systemImage: "chart.bar")
                 }
         }
         .task {
             // Loaded once on app start.
-            await store.loadIfNeeded()
+            await app.loadIfNeeded()
         }
     }
 }

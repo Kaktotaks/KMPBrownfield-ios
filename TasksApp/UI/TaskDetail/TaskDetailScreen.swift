@@ -3,23 +3,23 @@ import Shared
 
 @MainActor
 struct TaskDetailScreen: View {
-    @State private var viewModel: TaskDetailViewModel
-    @State private var isPresentingEditor = false
+    /// Kotlin `TaskDetailViewModel` (task by id, toggle, delete) behind the Swift wrapper.
+    @State private var model: TaskDetailModel
+    /// Created when the sheet opens, released (→ `clear()`) when it closes.
+    @State private var editor: TaskEditorModel?
     @State private var isConfirmingDelete = false
     @Environment(\.dismiss) private var dismiss
 
-    private let store: TaskStore
-    private let dateProvider: any DateProvider
+    private let app: AppDependencies
 
-    init(taskId: Int32, store: TaskStore, dateProvider: any DateProvider) {
-        self.store = store
-        self.dateProvider = dateProvider
-        _viewModel = State(initialValue: TaskDetailViewModel(taskId: taskId, store: store, dateProvider: dateProvider))
+    init(taskId: Int32, app: AppDependencies) {
+        self.app = app
+        _model = State(initialValue: app.makeTaskDetail(taskId: taskId))
     }
 
     var body: some View {
         Group {
-            if let task = viewModel.task {
+            if let task = model.state.task {
                 details(task)
             } else {
                 // Briefly visible while popping back after delete.
@@ -31,19 +31,17 @@ struct TaskDetailScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Edit") {
-                    isPresentingEditor = true
+                    editor = app.makeTaskEditor(taskId: model.viewModel.taskId)
                 }
-                .disabled(viewModel.task == nil)
+                .disabled(model.state.task == nil)
             }
         }
-        .sheet(isPresented: $isPresentingEditor) {
-            if let task = viewModel.task {
-                TaskEditorScreen(mode: .edit(task), store: store, dateProvider: dateProvider)
-            }
+        .sheet(item: $editor) { editor in
+            TaskEditorScreen(model: editor)
         }
         .confirmationDialog("Delete task?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
-                viewModel.delete()
+                model.send { $0.onDelete() }
                 dismiss()
             }
             Button("Cancel", role: .cancel) {}
@@ -61,7 +59,7 @@ struct TaskDetailScreen: View {
                             .foregroundStyle(Color.secondary)
                         PriorityBadge(priority: task.priority)
                     }
-                    DueDateLine(dueDate: task.dueDate, isOverdue: viewModel.isOverdue)
+                    DueDateLine(dueDate: task.dueDate, isOverdue: task.isOverdue(today: model.state.today))
                 }
                 .padding(.vertical, 4)
             }
@@ -77,7 +75,7 @@ struct TaskDetailScreen: View {
 
             Section {
                 Button(task.isDone ? "Mark as active" : "Mark as done") {
-                    viewModel.toggleDone()
+                    model.send { $0.onToggle() }
                 }
             }
 
