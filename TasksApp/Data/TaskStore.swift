@@ -4,23 +4,18 @@ import Shared
 
 // TaskStore: the thin Swift adapter between SwiftUI and the shared Kotlin data layer.
 //
-// The data layer itself is Kotlin now (`../shared`, package `...shared.data`):
+// The data layer itself is Kotlin (`../shared`, package `...shared.data`):
 //   - `KtorTaskApi`    — HTTP via Ktor (Darwin engine on iOS), JSON via kotlinx.serialization
 //   - `TaskRepository` — single in-memory source of truth, exposes `StateFlow<LoadState>`
 //
-// Why an adapter at all?
-//   - SwiftUI can only observe Swift `@Observable` / `ObservableObject` objects. A Kotlin
-//     `StateFlow` is invisible to it, and without SKIE its generic is erased in Swift
-//     (`value: Any?`), so `repository.state` is not usable from Swift without casts.
-//   - "Raw" interop instead: the iosMain extension `watchState { state in ... }` turns the
-//     StateFlow into a plain callback (fired on the main thread, immediately with the current
-//     value and on every change). This class mirrors each state into `@Observable` properties.
-//   - The Kotlin `sealed interface LoadState` arrives as a protocol plus three separate classes
-//     (`LoadStateLoading`, `LoadStateError`, `LoadStateLoaded`), so a Swift `switch` over it can't
-//     be exhaustive. We map it once, here, to the Swift `Phase` enum the screens switch over.
-//
-// Next step (SKIE): `for await state in repository.state` + `onEnum(of: state)` give an
-// exhaustive Swift enum and a typed AsyncSequence, so most of this file goes away.
+// Why an adapter is still needed: SwiftUI observes only Swift `@Observable` objects, not a
+// Kotlin StateFlow. But with SKIE (step 3) the adapter is just a typed `for await` loop:
+//   - `repository.state` is an `AsyncSequence` of `LoadState` (SKIE keeps the generic);
+//   - `onEnum(of: state)` turns the sealed `LoadState` into a Swift enum → exhaustive switch;
+//   - `try await repository.load()` works from any thread and cancels the Kotlin coroutine
+//     when the Swift Task is cancelled.
+// Before SKIE (step 2) this file needed a hand-written `watchState` callback bridge in iosMain,
+// `as?`/`is` checks without exhaustiveness, and a continuation to start `load()` on the main thread.
 @MainActor
 @Observable
 final class TaskStore {
@@ -37,39 +32,39 @@ final class TaskStore {
 
     @ObservationIgnored private let repository: TaskRepository
     @ObservationIgnored private var hasLoaded = false
-    /// Subscription to the Kotlin StateFlow. `nonisolated(unsafe)` so the nonisolated `deinit`
-    /// may cancel it (in Swift 5 mode there is no `isolated deinit`). The store lives for the
-    /// whole app lifetime anyway; the cancel is for tests/previews and correctness.
-    @ObservationIgnored nonisolated(unsafe) private var watchHandle: WatchHandle?
+    /// The `for await` observation loop. `nonisolated(unsafe)` so the nonisolated `deinit` may
+    /// cancel it (Swift 5 mode has no `isolated deinit`). The store lives for the app lifetime.
+    @ObservationIgnored nonisolated(unsafe) private var observation: Task<Void, Never>?
 
     init(repository: TaskRepository) {
         self.repository = repository
-        apply(repository.currentState)
-        watchHandle = repository.watchState { [weak self] state in
-            // Kotlin calls back on the main thread (MainScope), but Swift can't know that.
-            MainActor.assumeIsolated {
+        apply(repository.state.value)
+        let states = repository.state
+        // The Task inherits the main actor from this init, so `apply` runs on the main actor.
+        observation = Task { [weak self] in
+            for await state in states {
                 self?.apply(state)
             }
         }
     }
 
     deinit {
-        watchHandle?.cancel()
+        observation?.cancel()
     }
 
-    /// Kotlin `LoadState` (sealed interface → separate classes) → Swift `Phase` + tasks.
-    private func apply(_ state: any LoadState) {
-        if let loaded = state as? LoadStateLoaded {
+    /// Kotlin sealed `LoadState` → Swift `Phase` + tasks. Exhaustive thanks to SKIE's `onEnum`.
+    private func apply(_ state: LoadState) {
+        switch onEnum(of: state) {
+        case .loading:
+            tasks = []
+            phase = .loading
+        case .error:
+            tasks = []
+            phase = .error
+        case .loaded(let loaded):
             tasks = loaded.tasks
             phase = .loaded
             hasLoaded = true
-        } else if state is LoadStateError {
-            tasks = []
-            phase = .error
-        } else {
-            // LoadStateLoading (no `default`-free switch possible without SKIE).
-            tasks = []
-            phase = .loading
         }
     }
 
@@ -81,23 +76,13 @@ final class TaskStore {
         await load()
     }
 
-    /// Loads (or re-loads after an error). Never throws: Kotlin already turns network/decoding
-    /// failures into `LoadState.Error`, which arrives through `watchState`.
+    /// Loads (or re-loads after an error). Kotlin turns network/decoding failures into
+    /// `LoadState.Error`, which arrives through `repository.state`; only cancellation can throw.
     func load() async {
-        // Kotlin suspend fun → ObjC `load(completionHandler:)` (+ a Swift `async` overload).
-        // Kotlin/Native by default only allows starting a suspend call on the MAIN thread, but an
-        // imported `async` method is nonisolated, so `try await repository.load()` may hop off
-        // the main actor first. Calling the completion-handler form inside
-        // `withCheckedContinuation` (whose body runs on the caller's executor, i.e. MainActor)
-        // guarantees the Kotlin call starts on the main thread.
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            repository.load { _ in
-                continuation.resume()
-            }
-        }
+        try? await repository.load()
     }
 
-    // MARK: - Queries & mutations (forwarded to Kotlin; UI updates via watchState)
+    // MARK: - Queries & mutations (forwarded to Kotlin; UI updates via repository.state)
 
     func task(id: Int32) -> TaskItem? {
         repository.task(id: id)

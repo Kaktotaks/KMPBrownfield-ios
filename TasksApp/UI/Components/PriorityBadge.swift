@@ -15,11 +15,11 @@ struct PriorityBadge: View {
     }
 
     private var color: Color {
-        // Kotlin enums are classes in Swift, so the switch needs `default`.
+        // With SKIE the Kotlin enum is a real Swift enum → exhaustive switch, no `default`.
         switch priority {
         case .high: return .red
         case .medium: return .orange
-        default: return .gray
+        case .low: return .gray
         }
     }
 }

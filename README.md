@@ -93,9 +93,19 @@ Swift-side notes:
     completion-handler form inside `withCheckedContinuation` (runs on the calling MainActor).
   - A Swift class can implement the Kotlin `TaskApi` (ObjC protocol, `NSObject` subclass):
     `fetchTasks(today:completionHandler:)` — see `FakeTaskApi` in the tests.
-- **Next: SKIE.** `for await state in repository.state` + `onEnum(of:)` give a typed
-  AsyncSequence and an exhaustive enum; Kotlin suspend functions become proper Swift `async`.
-  `watchState`/`WatchHandle` and most of `TaskStore` can then be removed.
+
+### SKIE (step 3)
+
+`shared` now applies the SKIE plugin, which generates Swift wrappers into `Shared.framework`.
+What changed on the Swift side (the "raw interop" notes above are kept for comparison):
+
+| Before (step 2, raw ObjC) | After (step 3, SKIE) |
+|---|---|
+| `watchState { }` callback bridge in iosMain + `WatchHandle` | `for await state in repository.state` (typed `AsyncSequence`) |
+| `state.value` was `Any?`, so `currentState` helper | `repository.state.value` is typed |
+| `is`/`as?` checks on `LoadStateLoaded` / `LoadStateError` | `switch onEnum(of: state)` — exhaustive |
+| `load(completionHandler:)` in `withCheckedContinuation` (main-thread start) | `try await repository.load()` from any thread, cancellation propagates |
+| Kotlin enums are classes → `switch` needs `default` | real Swift enums → exhaustive `switch` (`PriorityBadge`) |
 
 ## Run
 
@@ -107,5 +117,5 @@ For a physical device, select your team under Signing & Capabilities (developmen
 
 ## Next KMP steps
 
-Add SKIE to `shared` to replace the raw interop (`watchState`, `LoadState` casts, continuation
-around `load()`). `UI/` and `App/` stay native SwiftUI and consume the shared code through thin adapters.
+Move the ViewModels to `shared` (state as `StateFlow`, observed through SKIE), so only SwiftUI views
+stay native; then ship `shared` as an XCFramework via SPM instead of the Run Script.

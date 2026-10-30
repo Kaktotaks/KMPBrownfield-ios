@@ -34,23 +34,21 @@ final class SharedDataInteropTests: XCTestCase {
         ]
     }
 
-    /// Starts the Kotlin suspend `load()` on the main thread (see TaskStore.load()).
-    private func load(_ repository: TaskRepository) async {
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            repository.load { _ in continuation.resume() }
-        }
-    }
-
-    func testLoadFromFakeApiThenMutate() async {
+    func testLoadFromFakeApiThenMutate() async throws {
         let repository = TaskRepository(
             api: FakeTaskApi(result: .success(makeTasks())),
             dateProvider: SystemDateProvider.shared
         )
-        XCTAssertTrue(repository.currentState is LoadStateLoading)
+        XCTAssertTrue(repository.state.value is LoadStateLoading)
 
-        await load(repository)
+        // SKIE: Kotlin suspend fun → Swift async.
+        try await repository.load()
 
-        XCTAssertTrue(repository.currentState is LoadStateLoaded)
+        // SKIE: StateFlow.value is typed; sealed → exhaustive Swift enum via onEnum(of:).
+        guard case .loaded(let loaded) = onEnum(of: repository.state.value) else {
+            return XCTFail("expected Loaded")
+        }
+        XCTAssertEqual(loaded.tasks.count, 2)
         XCTAssertEqual(repository.tasks.count, 2)
 
         let added = repository.add(title: "  New  ", notes: "", priority: .medium, dueDate: today)
@@ -72,8 +70,8 @@ final class SharedDataInteropTests: XCTestCase {
 
         await store.load()
 
-        XCTAssertTrue(repository.currentState is LoadStateError)
-        // watchState delivers on the main queue; let it run before checking the Swift mirror.
+        XCTAssertTrue(repository.state.value is LoadStateError)
+        // The store observes repository.state with `for await`; let that loop run first.
         await Task.yield()
         try? await Task.sleep(nanoseconds: 50_000_000)
         XCTAssertEqual(store.phase, .error)
