@@ -1,13 +1,13 @@
 # Tasks — iOS
 
 Native SwiftUI implementation of the Tasks app described in `../SPEC.md`.
-This is a Kotlin Multiplatform brownfield practice. Step 1 is done: the Swift `Domain/`
-layer was replaced by the KMP library in `../shared` (see "Shared (KMP) integration").
-Data and UI are still Swift. An Android twin lives in `../android-app` and follows the same spec.
+This is a Kotlin Multiplatform brownfield practice. Step 1: the Swift `Domain/` layer was
+replaced by the KMP library in `../shared`. Step 2: the Swift `Data/` layer (URLSession API,
+Codable DTO, repository) was replaced too — see "Shared (KMP) integration". UI is still SwiftUI. An Android twin lives in `../android-app` and follows the same spec.
 
 - iOS 17.0+, Swift 5 mode, SwiftUI app lifecycle, no third-party Swift dependencies
-- Domain from Kotlin: `Shared.framework` built from `../shared` on every Xcode build
-- Observation framework (`@Observable`) for the repository and every ViewModel
+- Domain + Data from Kotlin: `Shared.framework` built from `../shared` on every Xcode build
+- Observation framework (`@Observable`) for the `TaskStore` adapter and every ViewModel
 - Data: `GET https://jsonplaceholder.typicode.com/todos?_limit=20`, loaded once on launch,
   then all changes live in memory
 
@@ -18,15 +18,15 @@ TasksApp.xcodeproj           Xcode project (folder-synchronized groups) + shared
 TasksApp/
   App/                       TasksMainApp (@main), RootView (TabView: Tasks, Stats)
   Shared+Interop.swift       typealiases + Date <-> LocalDate helpers for the Kotlin framework
-  Data/                      TaskApi/URLSessionTaskApi, TodoDto (Codable; mapping via
-                             Kotlin TodoMapper), TaskRepository
+  Data/TaskStore.swift       @Observable adapter over the Kotlin TaskRepository
   UI/TaskList/               list screen, row, ViewModel
   UI/TaskDetail/             detail screen + ViewModel
   UI/TaskEditor/             editor sheet + ViewModel
   UI/Stats/                  stats screen + ViewModel
   UI/Components/             PriorityBadge, DueDateLine, loading/error views
   Assets.xcassets
-TasksAppTests/               XCTest smoke tests for the Kotlin interop (SharedInteropTests)
+TasksAppTests/               XCTest smoke tests for the Kotlin interop (SharedInteropTests,
+                             SharedDataInteropTests with a Swift fake of the Kotlin TaskApi)
 ```
 
 Layers:
@@ -34,10 +34,11 @@ Layers:
   `TaskValidator`, `ValidationError`, `TaskFilter` (+ `StatusFilter`, `SortOrder`),
   `StatsCalculator`, `TaskStats`, `DateProvider`/`SystemDateProvider`, `DateFormatting`,
   `TodoMapper`. Its unit tests live in `shared/src/commonTest`.
-- **Data** — Swift: network (`TaskApi`, protocol so it can be faked) and `TaskRepository`,
-  the single in-memory source of truth, injected via `.environment(...)`.
+- **Data** — Kotlin, from `../shared` (`...shared.data`): `TaskApi` (interface, fakeable from
+  Swift) / `KtorTaskApi`, `TaskRepository` (single in-memory source of truth, `StateFlow<LoadState>`).
+  Swift keeps only `TaskStore`, a thin `@Observable` adapter injected via `.environment(...)`.
 - **UI** — Swift: one folder per screen; each screen owns an `@Observable` ViewModel that
-  receives the repository and the `DateProvider` through its initializer.
+  receives the `TaskStore` and the `DateProvider` through its initializer.
 
 ## Shared (KMP) integration
 
@@ -72,6 +73,30 @@ Swift-side notes:
   aliases it to `LocalDate` and converts to/from `Date` via Kotlin `IosDates`. Foundation's
   `SortOrder` is shadowed there by `typealias SortOrder = Shared.SortOrder`.
 
+### Data layer (step 2)
+
+- Networking is Ktor in `commonMain`; on iOS it runs on the **Darwin engine** (NSURLSession under
+  the hood), JSON via kotlinx.serialization. `TodoDto` is `internal` in Kotlin — Swift only sees
+  `TaskItem`. The app builds `TaskRepository(api: KtorTaskApi(), dateProvider: SystemDateProvider.shared)`.
+- **`TaskStore`** (`Data/TaskStore.swift`) exists because SwiftUI can't observe a Kotlin `StateFlow`
+  (and without SKIE its generic is erased: `value: Any?`). It subscribes via the iosMain extension
+  `repository.watchState { state in ... }` (callback on the main thread, returns a `WatchHandle`
+  cancelled in `deinit`) and mirrors the state into `@Observable` `phase` + `tasks`. Mutations
+  (`add/update/toggleDone/delete`) are forwarded to Kotlin; the UI updates through the callback.
+- Raw interop limitations (no SKIE):
+  - `sealed interface LoadState` → protocol + classes `LoadStateLoading`/`LoadStateError`
+    (`.shared`) and `LoadStateLoaded` (`.tasks`); no exhaustive `switch`, so `TaskStore` maps it
+    with `is`/`as?` to the Swift `enum Phase`.
+  - `suspend fun load()` → `load(completionHandler:)` + an `async` overload. Kotlin/Native by
+    default requires suspend calls to *start* on the main thread, while imported `async` methods
+    are nonisolated and may hop off the main actor, so `TaskStore.load()` calls the
+    completion-handler form inside `withCheckedContinuation` (runs on the calling MainActor).
+  - A Swift class can implement the Kotlin `TaskApi` (ObjC protocol, `NSObject` subclass):
+    `fetchTasks(today:completionHandler:)` — see `FakeTaskApi` in the tests.
+- **Next: SKIE.** `for await state in repository.state` + `onEnum(of:)` give a typed
+  AsyncSequence and an exhaustive enum; Kotlin suspend functions become proper Swift `async`.
+  `watchState`/`WatchHandle` and most of `TaskStore` can then be removed.
+
 ## Run
 
 1. Open `TasksApp.xcodeproj` in Xcode (16 or newer — the project uses objectVersion 77).
@@ -82,5 +107,5 @@ For a physical device, select your team under Signing & Capabilities (developmen
 
 ## Next KMP steps
 
-`Data/` (network + repository) is the next candidate to move into `shared`.
-`UI/` and `App/` stay native SwiftUI and consume the shared code through thin adapters.
+Add SKIE to `shared` to replace the raw interop (`watchState`, `LoadState` casts, continuation
+around `load()`). `UI/` and `App/` stay native SwiftUI and consume the shared code through thin adapters.

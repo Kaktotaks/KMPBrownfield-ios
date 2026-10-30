@@ -5,8 +5,8 @@ import Shared
 struct StatsScreen: View {
     @State private var viewModel: StatsViewModel
 
-    init(repository: TaskRepository, dateProvider: any DateProvider) {
-        _viewModel = State(initialValue: StatsViewModel(repository: repository, dateProvider: dateProvider))
+    init(store: TaskStore, dateProvider: any DateProvider) {
+        _viewModel = State(initialValue: StatsViewModel(store: store, dateProvider: dateProvider))
     }
 
     var body: some View {
@@ -18,7 +18,7 @@ struct StatsScreen: View {
 
     @ViewBuilder
     private var content: some View {
-        switch viewModel.loadState {
+        switch viewModel.phase {
         case .loading:
             LoadingView()
         case .error:

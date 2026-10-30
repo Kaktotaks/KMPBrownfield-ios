@@ -6,8 +6,8 @@ struct TaskEditorScreen: View {
     @State private var viewModel: TaskEditorViewModel
     @Environment(\.dismiss) private var dismiss
 
-    init(mode: TaskEditorMode, repository: TaskRepository, dateProvider: any DateProvider) {
-        _viewModel = State(initialValue: TaskEditorViewModel(mode: mode, repository: repository, dateProvider: dateProvider))
+    init(mode: TaskEditorMode, store: TaskStore, dateProvider: any DateProvider) {
+        _viewModel = State(initialValue: TaskEditorViewModel(mode: mode, store: store, dateProvider: dateProvider))
     }
 
     var body: some View {

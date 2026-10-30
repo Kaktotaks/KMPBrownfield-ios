@@ -8,13 +8,13 @@ struct TaskDetailScreen: View {
     @State private var isConfirmingDelete = false
     @Environment(\.dismiss) private var dismiss
 
-    private let repository: TaskRepository
+    private let store: TaskStore
     private let dateProvider: any DateProvider
 
-    init(taskId: Int32, repository: TaskRepository, dateProvider: any DateProvider) {
-        self.repository = repository
+    init(taskId: Int32, store: TaskStore, dateProvider: any DateProvider) {
+        self.store = store
         self.dateProvider = dateProvider
-        _viewModel = State(initialValue: TaskDetailViewModel(taskId: taskId, repository: repository, dateProvider: dateProvider))
+        _viewModel = State(initialValue: TaskDetailViewModel(taskId: taskId, store: store, dateProvider: dateProvider))
     }
 
     var body: some View {
@@ -38,7 +38,7 @@ struct TaskDetailScreen: View {
         }
         .sheet(isPresented: $isPresentingEditor) {
             if let task = viewModel.task {
-                TaskEditorScreen(mode: .edit(task), repository: repository, dateProvider: dateProvider)
+                TaskEditorScreen(mode: .edit(task), store: store, dateProvider: dateProvider)
             }
         }
         .confirmationDialog("Delete task?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {

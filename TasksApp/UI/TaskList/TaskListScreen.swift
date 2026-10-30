@@ -6,13 +6,13 @@ struct TaskListScreen: View {
     @State private var viewModel: TaskListViewModel
     @State private var isPresentingNewTask = false
 
-    private let repository: TaskRepository
+    private let store: TaskStore
     private let dateProvider: any DateProvider
 
-    init(repository: TaskRepository, dateProvider: any DateProvider) {
-        self.repository = repository
+    init(store: TaskStore, dateProvider: any DateProvider) {
+        self.store = store
         self.dateProvider = dateProvider
-        _viewModel = State(initialValue: TaskListViewModel(repository: repository, dateProvider: dateProvider))
+        _viewModel = State(initialValue: TaskListViewModel(store: store, dateProvider: dateProvider))
     }
 
     var body: some View {
@@ -43,17 +43,17 @@ struct TaskListScreen: View {
                     }
                 }
                 .navigationDestination(for: Int32.self) { taskId in
-                    TaskDetailScreen(taskId: taskId, repository: repository, dateProvider: dateProvider)
+                    TaskDetailScreen(taskId: taskId, store: store, dateProvider: dateProvider)
                 }
                 .sheet(isPresented: $isPresentingNewTask) {
-                    TaskEditorScreen(mode: .new, repository: repository, dateProvider: dateProvider)
+                    TaskEditorScreen(mode: .new, store: store, dateProvider: dateProvider)
                 }
         }
     }
 
     @ViewBuilder
     private var content: some View {
-        switch viewModel.loadState {
+        switch viewModel.phase {
         case .loading:
             LoadingView()
         case .error:

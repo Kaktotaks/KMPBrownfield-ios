@@ -13,20 +13,20 @@ final class TaskListViewModel {
     var status: StatusFilter = .all
     var sort: SortOrder = .dueDate
 
-    private let repository: TaskRepository
+    private let store: TaskStore
     private let dateProvider: any DateProvider
 
-    init(repository: TaskRepository, dateProvider: any DateProvider) {
-        self.repository = repository
+    init(store: TaskStore, dateProvider: any DateProvider) {
+        self.store = store
         self.dateProvider = dateProvider
     }
 
-    var loadState: LoadState {
-        repository.loadState
+    var phase: TaskStore.Phase {
+        store.phase
     }
 
     var visibleTasks: [TaskItem] {
-        TaskFilter.shared.apply(tasks: repository.tasks, query: query, status: status, sort: sort)
+        TaskFilter.shared.apply(tasks: store.tasks, query: query, status: status, sort: sort)
     }
 
     func isOverdue(_ task: TaskItem) -> Bool {
@@ -34,12 +34,12 @@ final class TaskListViewModel {
     }
 
     func toggleDone(id: Int32) {
-        repository.toggleDone(id: id)
+        store.toggleDone(id: id)
     }
 
     func retry() {
         Task {
-            await self.repository.load()
+            await self.store.load()
         }
     }
 }

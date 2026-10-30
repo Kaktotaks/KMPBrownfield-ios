@@ -5,25 +5,25 @@ import Shared
 @MainActor
 @Observable
 final class StatsViewModel {
-    private let repository: TaskRepository
+    private let store: TaskStore
     private let dateProvider: any DateProvider
 
-    init(repository: TaskRepository, dateProvider: any DateProvider) {
-        self.repository = repository
+    init(store: TaskStore, dateProvider: any DateProvider) {
+        self.store = store
         self.dateProvider = dateProvider
     }
 
-    var loadState: LoadState {
-        repository.loadState
+    var phase: TaskStore.Phase {
+        store.phase
     }
 
     var stats: TaskStats {
-        StatsCalculator.shared.calculate(tasks: repository.tasks, today: dateProvider.today())
+        StatsCalculator.shared.calculate(tasks: store.tasks, today: dateProvider.today())
     }
 
     func retry() {
         Task {
-            await self.repository.load()
+            await self.store.load()
         }
     }
 }

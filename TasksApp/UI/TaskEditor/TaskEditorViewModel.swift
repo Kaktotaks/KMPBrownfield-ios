@@ -22,12 +22,12 @@ final class TaskEditorViewModel {
 
     let mode: TaskEditorMode
 
-    private let repository: TaskRepository
+    private let store: TaskStore
     private let validator: TaskValidator
 
-    init(mode: TaskEditorMode, repository: TaskRepository, dateProvider: any DateProvider) {
+    init(mode: TaskEditorMode, store: TaskStore, dateProvider: any DateProvider) {
         self.mode = mode
-        self.repository = repository
+        self.store = store
         self.validator = TaskValidator(dateProvider: dateProvider)
         switch mode {
         case .new:
@@ -78,7 +78,7 @@ final class TaskEditorViewModel {
         guard canSave else { return false }
         switch mode {
         case .new:
-            repository.add(title: title, notes: notes, priority: priority, dueDate: dueDate.asLocalDate)
+            store.add(title: title, notes: notes, priority: priority, dueDate: dueDate.asLocalDate)
         case .edit(let original):
             let updated = original.doCopy(
                 id: original.id,
@@ -88,7 +88,7 @@ final class TaskEditorViewModel {
                 dueDate: dueDate.asLocalDate,
                 isDone: original.isDone
             )
-            repository.update(updated)
+            store.update(updated)
         }
         return true
     }

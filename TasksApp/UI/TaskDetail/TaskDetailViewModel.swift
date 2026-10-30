@@ -7,18 +7,18 @@ import Shared
 final class TaskDetailViewModel {
     let taskId: Int32
 
-    private let repository: TaskRepository
+    private let store: TaskStore
     private let dateProvider: any DateProvider
 
-    init(taskId: Int32, repository: TaskRepository, dateProvider: any DateProvider) {
+    init(taskId: Int32, store: TaskStore, dateProvider: any DateProvider) {
         self.taskId = taskId
-        self.repository = repository
+        self.store = store
         self.dateProvider = dateProvider
     }
 
     /// nil after the task was deleted.
     var task: TaskItem? {
-        repository.task(id: taskId)
+        store.task(id: taskId)
     }
 
     var isOverdue: Bool {
@@ -26,10 +26,10 @@ final class TaskDetailViewModel {
     }
 
     func toggleDone() {
-        repository.toggleDone(id: taskId)
+        store.toggleDone(id: taskId)
     }
 
     func delete() {
-        repository.delete(id: taskId)
+        store.delete(id: taskId)
     }
 }
