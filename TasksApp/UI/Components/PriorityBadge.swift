@@ -1,4 +1,5 @@
 import SwiftUI
+import Shared
 
 /// Capsule badge: Low = gray, Medium = orange, High = red.
 struct PriorityBadge: View {
@@ -14,10 +15,11 @@ struct PriorityBadge: View {
     }
 
     private var color: Color {
+        // Kotlin enums are classes in Swift, so the switch needs `default`.
         switch priority {
-        case .low: return .gray
-        case .medium: return .orange
         case .high: return .red
+        case .medium: return .orange
+        default: return .gray
         }
     }
 }

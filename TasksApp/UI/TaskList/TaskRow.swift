@@ -1,7 +1,8 @@
 import SwiftUI
+import Shared
 
 struct TaskRow: View {
-    let task: Task
+    let task: TaskItem
     let isOverdue: Bool
     let onToggle: () -> Void
 

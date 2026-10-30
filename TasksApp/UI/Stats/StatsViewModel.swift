@@ -1,15 +1,16 @@
 import Foundation
 import Observation
+import Shared
 
 @MainActor
 @Observable
 final class StatsViewModel {
     private let repository: TaskRepository
-    private let clock: any Clock
+    private let dateProvider: any DateProvider
 
-    init(repository: TaskRepository, clock: any Clock) {
+    init(repository: TaskRepository, dateProvider: any DateProvider) {
         self.repository = repository
-        self.clock = clock
+        self.dateProvider = dateProvider
     }
 
     var loadState: LoadState {
@@ -17,11 +18,11 @@ final class StatsViewModel {
     }
 
     var stats: TaskStats {
-        StatsCalculator.calculate(tasks: repository.tasks, today: clock.today)
+        StatsCalculator.shared.calculate(tasks: repository.tasks, today: dateProvider.today())
     }
 
     func retry() {
-        _Concurrency.Task {
+        Task {
             await self.repository.load()
         }
     }

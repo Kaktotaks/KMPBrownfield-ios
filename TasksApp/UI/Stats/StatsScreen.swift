@@ -1,11 +1,12 @@
 import SwiftUI
+import Shared
 
 @MainActor
 struct StatsScreen: View {
     @State private var viewModel: StatsViewModel
 
-    init(repository: TaskRepository, clock: any Clock) {
-        _viewModel = State(initialValue: StatsViewModel(repository: repository, clock: clock))
+    init(repository: TaskRepository, dateProvider: any DateProvider) {
+        _viewModel = State(initialValue: StatsViewModel(repository: repository, dateProvider: dateProvider))
     }
 
     var body: some View {
@@ -58,7 +59,7 @@ struct StatsScreen: View {
         }
     }
 
-    private func row(_ title: String, _ value: Int) -> some View {
+    private func row(_ title: String, _ value: Int32) -> some View {
         LabeledContent(title, value: "\(value)")
     }
 }

@@ -1,40 +1,44 @@
 import Foundation
 import Observation
+import Shared
 
 @MainActor
 @Observable
 final class TaskListViewModel {
+    /// Kotlin enums don't bridge as Swift `CaseIterable`, so the segment/menu order is listed here.
+    static let statusFilters: [StatusFilter] = [.all, .active, .done]
+    static let sortOrders: [SortOrder] = [.dueDate, .priority]
+
     var query: String = ""
     var status: StatusFilter = .all
     var sort: SortOrder = .dueDate
 
     private let repository: TaskRepository
-    private let clock: any Clock
+    private let dateProvider: any DateProvider
 
-    init(repository: TaskRepository, clock: any Clock) {
+    init(repository: TaskRepository, dateProvider: any DateProvider) {
         self.repository = repository
-        self.clock = clock
+        self.dateProvider = dateProvider
     }
 
     var loadState: LoadState {
         repository.loadState
     }
 
-    var visibleTasks: [Task] {
-        TaskFilter.apply(repository.tasks, query: query, status: status, sort: sort)
+    var visibleTasks: [TaskItem] {
+        TaskFilter.shared.apply(tasks: repository.tasks, query: query, status: status, sort: sort)
     }
 
-    func isOverdue(_ task: Task) -> Bool {
-        task.isOverdue(today: clock.today)
+    func isOverdue(_ task: TaskItem) -> Bool {
+        task.isOverdue(today: dateProvider.today())
     }
 
-    func toggleDone(id: Int) {
+    func toggleDone(id: Int32) {
         repository.toggleDone(id: id)
     }
 
     func retry() {
-        // `Task` is our domain model in this module, hence the qualified name.
-        _Concurrency.Task {
+        Task {
             await self.repository.load()
         }
     }

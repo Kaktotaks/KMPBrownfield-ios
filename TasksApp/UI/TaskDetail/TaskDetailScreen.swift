@@ -1,4 +1,5 @@
 import SwiftUI
+import Shared
 
 @MainActor
 struct TaskDetailScreen: View {
@@ -8,12 +9,12 @@ struct TaskDetailScreen: View {
     @Environment(\.dismiss) private var dismiss
 
     private let repository: TaskRepository
-    private let clock: any Clock
+    private let dateProvider: any DateProvider
 
-    init(taskId: Int, repository: TaskRepository, clock: any Clock) {
+    init(taskId: Int32, repository: TaskRepository, dateProvider: any DateProvider) {
         self.repository = repository
-        self.clock = clock
-        _viewModel = State(initialValue: TaskDetailViewModel(taskId: taskId, repository: repository, clock: clock))
+        self.dateProvider = dateProvider
+        _viewModel = State(initialValue: TaskDetailViewModel(taskId: taskId, repository: repository, dateProvider: dateProvider))
     }
 
     var body: some View {
@@ -37,7 +38,7 @@ struct TaskDetailScreen: View {
         }
         .sheet(isPresented: $isPresentingEditor) {
             if let task = viewModel.task {
-                TaskEditorScreen(mode: .edit(task), repository: repository, clock: clock)
+                TaskEditorScreen(mode: .edit(task), repository: repository, dateProvider: dateProvider)
             }
         }
         .confirmationDialog("Delete task?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
@@ -49,7 +50,7 @@ struct TaskDetailScreen: View {
         }
     }
 
-    private func details(_ task: Task) -> some View {
+    private func details(_ task: TaskItem) -> some View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 10) {

@@ -1,18 +1,23 @@
 import Foundation
 import Observation
+import Shared
 
 /// Editor mode: create a new task or edit an existing one.
 enum TaskEditorMode {
     case new
-    case edit(Task)
+    case edit(TaskItem)
 }
 
 @MainActor
 @Observable
 final class TaskEditorViewModel {
+    /// Kotlin enums don't bridge as Swift `CaseIterable`, so the segment order is listed here.
+    static let priorities: [Priority] = [.low, .medium, .high]
+
     var title: String
     var notes: String
     var priority: Priority
+    /// Swift `Date` for the DatePicker; converted to Kotlin `LocalDate` for validation and saving.
     var dueDate: Date
 
     let mode: TaskEditorMode
@@ -20,21 +25,21 @@ final class TaskEditorViewModel {
     private let repository: TaskRepository
     private let validator: TaskValidator
 
-    init(mode: TaskEditorMode, repository: TaskRepository, clock: any Clock) {
+    init(mode: TaskEditorMode, repository: TaskRepository, dateProvider: any DateProvider) {
         self.mode = mode
         self.repository = repository
-        self.validator = TaskValidator(clock: clock)
+        self.validator = TaskValidator(dateProvider: dateProvider)
         switch mode {
         case .new:
             title = ""
             notes = ""
             priority = .medium
-            dueDate = clock.today
+            dueDate = dateProvider.today().asDate
         case .edit(let task):
             title = task.title
             notes = task.notes
             priority = task.priority
-            dueDate = task.dueDate
+            dueDate = task.dueDate.asDate
         }
     }
 
@@ -45,7 +50,7 @@ final class TaskEditorViewModel {
         }
     }
 
-    private var originalDueDate: Date? {
+    private var originalDueDate: LocalDate? {
         switch mode {
         case .new: return nil
         case .edit(let task): return task.dueDate
@@ -54,7 +59,13 @@ final class TaskEditorViewModel {
 
     /// Live validation, recomputed whenever a field changes.
     var errors: [ValidationError] {
-        validator.validate(title: title, notes: notes, dueDate: dueDate, originalDueDate: originalDueDate)
+        // Kotlin default arguments are not exported: originalDueDate is always passed (nil for new).
+        validator.validate(
+            title: title,
+            notes: notes,
+            dueDate: dueDate.asLocalDate,
+            originalDueDate: originalDueDate
+        )
     }
 
     var canSave: Bool {
@@ -67,13 +78,16 @@ final class TaskEditorViewModel {
         guard canSave else { return false }
         switch mode {
         case .new:
-            repository.add(title: title, notes: notes, priority: priority, dueDate: dueDate)
+            repository.add(title: title, notes: notes, priority: priority, dueDate: dueDate.asLocalDate)
         case .edit(let original):
-            var updated = original
-            updated.title = title
-            updated.notes = notes
-            updated.priority = priority
-            updated.dueDate = dueDate
+            let updated = original.doCopy(
+                id: original.id,
+                title: title,
+                notes: notes,
+                priority: priority,
+                dueDate: dueDate.asLocalDate,
+                isDone: original.isDone
+            )
             repository.update(updated)
         }
         return true

@@ -1,23 +1,25 @@
 import SwiftUI
+import Shared
 
 /// App entry point.
 /// The struct is intentionally NOT named `TasksApp` (the module name), so that
-/// `TasksApp.Task` / `TasksApp.SortOrder` stay usable as module-qualified names in tests.
+/// module-qualified names like `TasksApp.LoadState` stay usable in tests.
 @main
 @MainActor
 struct TasksMainApp: App {
     @State private var repository: TaskRepository
-    private let clock: any Clock
+    /// "Today" provider from the shared Kotlin module.
+    private let dateProvider: any DateProvider
 
     init() {
-        let clock = SystemClock()
-        self.clock = clock
-        _repository = State(initialValue: TaskRepository(api: URLSessionTaskApi(), clock: clock))
+        let dateProvider: any DateProvider = SystemDateProvider.shared
+        self.dateProvider = dateProvider
+        _repository = State(initialValue: TaskRepository(api: URLSessionTaskApi(), dateProvider: dateProvider))
     }
 
     var body: some Scene {
         WindowGroup {
-            RootView(clock: clock)
+            RootView(dateProvider: dateProvider)
                 .environment(repository)
         }
     }

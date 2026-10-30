@@ -1,27 +1,28 @@
 import Foundation
 import Observation
+import Shared
 
 @MainActor
 @Observable
 final class TaskDetailViewModel {
-    let taskId: Int
+    let taskId: Int32
 
     private let repository: TaskRepository
-    private let clock: any Clock
+    private let dateProvider: any DateProvider
 
-    init(taskId: Int, repository: TaskRepository, clock: any Clock) {
+    init(taskId: Int32, repository: TaskRepository, dateProvider: any DateProvider) {
         self.taskId = taskId
         self.repository = repository
-        self.clock = clock
+        self.dateProvider = dateProvider
     }
 
     /// nil after the task was deleted.
-    var task: Task? {
+    var task: TaskItem? {
         repository.task(id: taskId)
     }
 
     var isOverdue: Bool {
-        task?.isOverdue(today: clock.today) ?? false
+        task?.isOverdue(today: dateProvider.today()) ?? false
     }
 
     func toggleDone() {

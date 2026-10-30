@@ -1,4 +1,5 @@
 import SwiftUI
+import Shared
 
 @MainActor
 struct TaskListScreen: View {
@@ -6,12 +7,12 @@ struct TaskListScreen: View {
     @State private var isPresentingNewTask = false
 
     private let repository: TaskRepository
-    private let clock: any Clock
+    private let dateProvider: any DateProvider
 
-    init(repository: TaskRepository, clock: any Clock) {
+    init(repository: TaskRepository, dateProvider: any DateProvider) {
         self.repository = repository
-        self.clock = clock
-        _viewModel = State(initialValue: TaskListViewModel(repository: repository, clock: clock))
+        self.dateProvider = dateProvider
+        _viewModel = State(initialValue: TaskListViewModel(repository: repository, dateProvider: dateProvider))
     }
 
     var body: some View {
@@ -23,8 +24,8 @@ struct TaskListScreen: View {
                     ToolbarItem(placement: .topBarLeading) {
                         Menu {
                             Picker("Sort", selection: $viewModel.sort) {
-                                ForEach(SortOrder.allCases) { order in
-                                    Text(order.title).tag(order)
+                                ForEach(TaskListViewModel.sortOrders, id: \.self) { order in
+                                    Text(order.displayName).tag(order)
                                 }
                             }
                         } label: {
@@ -41,11 +42,11 @@ struct TaskListScreen: View {
                         .accessibilityLabel("New Task")
                     }
                 }
-                .navigationDestination(for: Int.self) { taskId in
-                    TaskDetailScreen(taskId: taskId, repository: repository, clock: clock)
+                .navigationDestination(for: Int32.self) { taskId in
+                    TaskDetailScreen(taskId: taskId, repository: repository, dateProvider: dateProvider)
                 }
                 .sheet(isPresented: $isPresentingNewTask) {
-                    TaskEditorScreen(mode: .new, repository: repository, clock: clock)
+                    TaskEditorScreen(mode: .new, repository: repository, dateProvider: dateProvider)
                 }
         }
     }
@@ -67,8 +68,8 @@ struct TaskListScreen: View {
     private var loadedContent: some View {
         VStack(spacing: 0) {
             Picker("Status", selection: $viewModel.status) {
-                ForEach(StatusFilter.allCases) { filter in
-                    Text(filter.title).tag(filter)
+                ForEach(TaskListViewModel.statusFilters, id: \.self) { filter in
+                    Text(filter.displayName).tag(filter)
                 }
             }
             .pickerStyle(.segmented)
@@ -79,7 +80,8 @@ struct TaskListScreen: View {
             if tasks.isEmpty {
                 ContentUnavailableView("No tasks", systemImage: "checklist")
             } else {
-                List(tasks) { task in
+                // TaskItem is a Kotlin class; identify rows by its Int32 id.
+                List(tasks, id: \.id) { task in
                     NavigationLink(value: task.id) {
                         TaskRow(
                             task: task,

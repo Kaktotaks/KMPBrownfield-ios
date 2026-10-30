@@ -1,7 +1,7 @@
 import Foundation
 
 /// Network access for tasks. Protocol so it can be faked in tests/previews.
-/// KMP sharing candidate (Ktor client on the shared side).
+/// Stays Swift in this migration step (later: Ktor client in the shared module).
 protocol TaskApi {
     func fetchTodos() async throws -> [TodoDto]
 }
