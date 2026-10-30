@@ -3,9 +3,12 @@ import Shared
 @testable import TasksApp
 
 /// Swift implementation of the Kotlin `TaskApi` interface (exported as an ObjC protocol).
-/// Kotlin `suspend fun fetchTasks(today)` → ObjC `fetchTasks(today:completionHandler:)`.
-/// The completion-handler form is implemented (not the Swift `async` one) so the fake answers
-/// synchronously, on the thread Kotlin called it from — no Swift concurrency involved.
+///
+/// ⚡️ Interop gotcha: SKIE hides the original ObjC suspend requirement behind a `__` prefix
+/// (`__fetchTasks(today:completionHandler:)` / `__fetchTasks(today:) async throws`) and gives
+/// *callers* its own Swift `async` wrapper `fetchTasks(today:)`. So to *implement* a Kotlin
+/// suspend interface in Swift you implement the `__`-prefixed requirement. Either form satisfies
+/// it (SE-0297); the `async throws` one is used here. The completion handler is `@Sendable`.
 final class FakeTaskApi: NSObject, TaskApi {
     private let result: Result<[TaskItem], Error>
 
@@ -13,11 +16,8 @@ final class FakeTaskApi: NSObject, TaskApi {
         self.result = result
     }
 
-    func fetchTasks(today: LocalDate, completionHandler: @escaping ([TaskItem]?, Error?) -> Void) {
-        switch result {
-        case .success(let tasks): completionHandler(tasks, nil)
-        case .failure(let error): completionHandler(nil, error)
-        }
+    func __fetchTasks(today: LocalDate) async throws -> [TaskItem] {
+        try result.get()
     }
 }
 
