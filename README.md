@@ -6,11 +6,11 @@ replaced by the KMP library in `../shared`. Step 2: the Swift `Data/` layer (URL
 Codable DTO, repository) was replaced too — see "Shared (KMP) integration". Step 3: SKIE.
 Step 4: the screen ViewModels come from `shared` too; Swift keeps only SwiftUI views and thin
 wrappers — see "Shared ViewModels (step 4)". Step 5: UI-only SwiftUI views over per-screen Swift
-screen models — see "Screen models (step 5)". An Android twin lives in `../android-app` and follows the same spec.
+view models — see "Screen models (step 5)". An Android twin lives in `../android-app` and follows the same spec.
 
 - iOS 17.0+, Swift 5 mode, SwiftUI app lifecycle, no third-party Swift dependencies
 - Domain + Data + ViewModels from Kotlin: `Shared.framework` built from `../shared` on every Xcode build
-- Observation framework (`@Observable`) for the screen models and the generic `SharedViewModel` bridge
+- Observation framework (`@Observable`) for the view models and the generic `SharedViewModel` bridge
 - Data: `GET https://jsonplaceholder.typicode.com/todos?_limit=20`, loaded once on launch,
   then all changes live in memory
 
@@ -21,19 +21,19 @@ TasksApp.xcodeproj           Xcode project (folder-synchronized groups) + shared
 TasksApp/
   App/                       TasksMainApp (@main), RootView (TabView: Tasks, Stats),
                              AppDependencies (repository, validator, load on start,
-                             Kotlin VM + screen model factories)
+                             Kotlin VM + view model factories)
   Shared+Interop.swift       typealiases + Date <-> LocalDate helpers for the Kotlin framework
   UI/SharedViewModel.swift   generic @Observable bridge around a Kotlin ViewModel (observe + clear)
-  UI/TaskList/               TaskListScreenModel, TaskRowItem, list screen (+ small subviews), row
-  UI/TaskDetail/             TaskDetailScreenModel, detail screen
-  UI/TaskEditor/             TaskEditorScreenModel, editor sheet
-  UI/Stats/                  StatsScreenModel (+ StatsSummary), stats screen
+  UI/TaskList/               TaskListViewModel, TaskRowItem, list screen (+ small subviews), row
+  UI/TaskDetail/             TaskDetailViewModel, detail screen
+  UI/TaskEditor/             TaskEditorViewModel, editor sheet
+  UI/Stats/                  StatsViewModel (+ StatsSummary), stats screen
   UI/Components/             PriorityBadge, Priority+UI (badge color), DueDateLine,
                              loading/error views, SegmentedPicker, PickerOption
   Assets.xcassets
 TasksAppTests/               XCTest smoke tests for the Kotlin interop (SharedInteropTests,
                              SharedDataInteropTests with a Swift fake of the Kotlin TaskApi,
-                             SharedViewModelInteropTests) + ScreenModelTests (mapping, bindings)
+                             SharedViewModelInteropTests) + ViewModelTests (mapping, bindings)
 ```
 
 Layers:
@@ -46,7 +46,7 @@ Layers:
   Swift owns one instance in `AppDependencies`.
 - **Presentation** — Kotlin, from `../shared` (`...shared.presentation`): `TaskListViewModel`,
   `TaskDetailViewModel`, `TaskEditorViewModel`, `StatsViewModel` (androidx `ViewModel`, `StateFlow` uiState).
-- **UI** — Swift: one folder per screen; each SwiftUI screen holds a Swift screen model that owns
+- **UI** — Swift: one folder per screen; each SwiftUI screen holds a Swift view model that owns
   its Kotlin ViewModel through a `SharedViewModel` bridge, all created by `AppDependencies`.
 
 ## Shared (KMP) integration
@@ -143,20 +143,20 @@ model in `@State`; the editor model is created by the presenting screen when the
 when the sheet closes. New task → `TaskEditorViewModel.companion.NEW_TASK_ID`.
 
 What stays native (Swift): SwiftUI views, navigation (`NavigationStack`, `navigationDestination`,
-sheets, `dismiss`), confirmation dialog, and the screen models below.
+sheets, `dismiss`), confirmation dialog, and the view models below.
 
 ## Screen models (step 5)
 
 SwiftUI views are **UI only**: just `body` — no private funcs/computed sub-views, no computed
 `Binding`s, no `switch onEnum`, no mapping/formatting, no closures that talk to the Kotlin VM.
-Everything else moved into a per-screen Swift **screen model** ("local ViewModel", SwiftUI-style).
+Everything else moved into a per-screen Swift **view model** ("local ViewModel", SwiftUI-style).
 
 ```
 SwiftUI View (UI only)              TaskListScreen, TaskDetailScreen, TaskEditorScreen, StatsScreen
    │  @State / @Bindable, $model.x
    ▼
-ScreenModel (Swift, @MainActor      TaskListScreenModel, TaskDetailScreenModel,
- @Observable)                       TaskEditorScreenModel, StatsScreenModel
+ViewModel (Swift, @MainActor      TaskListViewModel, TaskDetailViewModel,
+ @Observable)                       TaskEditorViewModel, StatsViewModel
    │  platform presentation: display-ready state, bindings, formatting,
    │  Date ↔ LocalDate, picker options, navigation/sheet factories
    ▼
@@ -166,11 +166,11 @@ SharedViewModel<VM, UiState>        generic bridge: mirrors `uiState` (for await
 Kotlin ViewModel (shared)           business/presentation logic shared with Android
 ```
 
-Each screen model exposes:
-- **display-ready state** — e.g. `TaskListScreenModel.content`
+Each view model exposes:
+- **display-ready state** — e.g. `TaskListViewModel.content`
   (`.loading / .error / .empty / .loaded([TaskRowItem])`, mapped from the Kotlin sealed type via
   `onEnum` here), `TaskRowItem` (`dueText` "Due 29 Oct 2026" via shared `DateFormatting`,
-  `isOverdue`, `toggleTitle` "Mark as done"/"Mark as active"), `TaskDetailScreenModel.details`
+  `isOverdue`, `toggleTitle` "Mark as done"/"Mark as active"), `TaskDetailViewModel.details`
   ("Done"/"Active", notes or `nil` → "No notes"), editor `screenTitle` / `canSave` /
   `errorMessages`, `StatsSummary` rows;
 - **bindable properties** — computed properties whose setter sends the Kotlin event, so views
@@ -189,7 +189,7 @@ Views only branch on the display state and compose small View structs (`StatusFi
 presentational state stays in the view (`@State isConfirmingDelete`, `@Environment(\.dismiss)`),
 and inline closures call a single intent (`{ model.retry() }`, `{ if model.save() { dismiss() } }`).
 `PriorityBadge`'s color comes from `Priority.badgeColor` (`UI/Components/Priority+UI.swift`).
-`AppDependencies` builds screen models (`makeTaskListScreenModel()` …) and passes itself to the
+`AppDependencies` builds view models (`makeTaskListViewModel()` …) and passes itself to the
 ones that create child models (list → detail/editor, detail → editor).
 
 ## Run

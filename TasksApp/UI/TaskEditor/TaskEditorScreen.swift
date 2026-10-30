@@ -1,11 +1,11 @@
 import SwiftUI
 import Shared
 
-/// New / Edit task sheet. UI only: controls bind to `TaskEditorScreenModel`, which forwards every
+/// New / Edit task sheet. UI only: controls bind to `TaskEditorViewModel`, which forwards every
 /// change to the Kotlin `TaskEditorViewModel` (form state + live validation).
 @MainActor
 struct TaskEditorScreen: View {
-    @Bindable var model: TaskEditorScreenModel
+    @Bindable var model: TaskEditorViewModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {

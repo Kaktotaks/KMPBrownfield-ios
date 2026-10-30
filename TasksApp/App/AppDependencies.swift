@@ -39,19 +39,19 @@ final class AppDependencies {
     // MARK: - ViewModel factories
 
     func makeTaskList() -> TaskListModel {
-        let vm = TaskListViewModel(repository: repository, dateProvider: dateProvider)
+        let vm = Shared.TaskListViewModel(repository: repository, dateProvider: dateProvider)
         return TaskListModel(vm, states: vm.uiState, value: { vm.uiState.value })
     }
 
     func makeTaskDetail(taskId: Int32) -> TaskDetailModel {
-        let vm = TaskDetailViewModel(taskId: taskId, repository: repository, dateProvider: dateProvider)
+        let vm = Shared.TaskDetailViewModel(taskId: taskId, repository: repository, dateProvider: dateProvider)
         return TaskDetailModel(vm, states: vm.uiState, value: { vm.uiState.value })
     }
 
     /// `taskId == nil` → new task (Kotlin `NEW_TASK_ID`).
     func makeTaskEditor(taskId: Int32?) -> TaskEditorModel {
-        let vm = TaskEditorViewModel(
-            taskId: taskId ?? TaskEditorViewModel.companion.NEW_TASK_ID,
+        let vm = Shared.TaskEditorViewModel(
+            taskId: taskId ?? Shared.TaskEditorViewModel.companion.NEW_TASK_ID,
             repository: repository,
             validator: validator,
             dateProvider: dateProvider
@@ -60,26 +60,26 @@ final class AppDependencies {
     }
 
     func makeStats() -> StatsModel {
-        let vm = StatsViewModel(repository: repository, dateProvider: dateProvider)
+        let vm = Shared.StatsViewModel(repository: repository, dateProvider: dateProvider)
         return StatsModel(vm, states: vm.uiState, value: { vm.uiState.value })
     }
 
     // MARK: - Screen model factories (what the SwiftUI screens hold)
 
-    func makeTaskListScreenModel() -> TaskListScreenModel {
-        TaskListScreenModel(shared: makeTaskList(), app: self)
+    func makeTaskListViewModel() -> TaskListViewModel {
+        TaskListViewModel(shared: makeTaskList(), app: self)
     }
 
-    func makeTaskDetailScreenModel(taskId: Int32) -> TaskDetailScreenModel {
-        TaskDetailScreenModel(shared: makeTaskDetail(taskId: taskId), app: self)
+    func makeTaskDetailViewModel(taskId: Int32) -> TaskDetailViewModel {
+        TaskDetailViewModel(shared: makeTaskDetail(taskId: taskId), app: self)
     }
 
     /// `taskId == nil` → new task.
-    func makeTaskEditorScreenModel(taskId: Int32?) -> TaskEditorScreenModel {
-        TaskEditorScreenModel(shared: makeTaskEditor(taskId: taskId))
+    func makeTaskEditorViewModel(taskId: Int32?) -> TaskEditorViewModel {
+        TaskEditorViewModel(shared: makeTaskEditor(taskId: taskId))
     }
 
-    func makeStatsScreenModel() -> StatsScreenModel {
-        StatsScreenModel(shared: makeStats())
+    func makeStatsViewModel() -> StatsViewModel {
+        StatsViewModel(shared: makeStats())
     }
 }

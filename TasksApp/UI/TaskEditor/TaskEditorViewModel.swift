@@ -7,7 +7,7 @@ import Shared
 /// opens (`sheet(item:)`), so there is exactly one Kotlin ViewModel per presentation.
 @MainActor
 @Observable
-final class TaskEditorScreenModel {
+final class TaskEditorViewModel {
     /// Kotlin enums with SKIE are Swift enums, but not `CaseIterable`: the segment order is listed here.
     let priorityOptions: [PickerOption<Priority>] = [Priority.low, .medium, .high]
         .map { PickerOption(value: $0, title: $0.displayName) }
@@ -59,4 +59,4 @@ final class TaskEditorScreenModel {
 }
 
 /// `sheet(item:)` needs Identifiable; a class gets `id = ObjectIdentifier(self)` for free.
-extension TaskEditorScreenModel: Identifiable {}
+extension TaskEditorViewModel: Identifiable {}

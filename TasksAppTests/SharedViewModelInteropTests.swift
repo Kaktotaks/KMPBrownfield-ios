@@ -16,8 +16,8 @@ final class SharedViewModelInteropTests: XCTestCase {
         )
         try await repository.load()
 
-        let vm = TaskEditorViewModel(
-            taskId: TaskEditorViewModel.companion.NEW_TASK_ID,
+        let vm = Shared.TaskEditorViewModel(
+            taskId: Shared.TaskEditorViewModel.companion.NEW_TASK_ID,
             repository: repository,
             validator: TaskValidator(dateProvider: SystemDateProvider.shared),
             dateProvider: SystemDateProvider.shared

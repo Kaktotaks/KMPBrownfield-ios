@@ -1,10 +1,10 @@
 import SwiftUI
 import Shared
 
-/// Tasks tab. UI only: state mapping, bindings and navigation factories live in `TaskListScreenModel`.
+/// Tasks tab. UI only: state mapping, bindings and navigation factories live in `TaskListViewModel`.
 @MainActor
 struct TaskListScreen: View {
-    @State var model: TaskListScreenModel
+    @State var model: TaskListViewModel
 
     var body: some View {
         NavigationStack {
@@ -54,7 +54,7 @@ struct TaskListScreen: View {
 /// Segmented "All / Active / Done" filter above the list.
 @MainActor
 struct StatusFilterBar: View {
-    @Bindable var model: TaskListScreenModel
+    @Bindable var model: TaskListViewModel
 
     var body: some View {
         SegmentedPicker(title: "Status", selection: $model.status, options: model.statusOptions)
@@ -66,7 +66,7 @@ struct StatusFilterBar: View {
 /// Toolbar menu: "Sort by due date" / "Sort by priority".
 @MainActor
 struct SortMenu: View {
-    @Bindable var model: TaskListScreenModel
+    @Bindable var model: TaskListViewModel
 
     var body: some View {
         Menu {
@@ -85,7 +85,7 @@ struct SortMenu: View {
 /// The loaded, non-empty list; rows push the detail screen by task id.
 @MainActor
 struct TaskRowsList: View {
-    let model: TaskListScreenModel
+    let model: TaskListViewModel
     let rows: [TaskRowItem]
 
     var body: some View {

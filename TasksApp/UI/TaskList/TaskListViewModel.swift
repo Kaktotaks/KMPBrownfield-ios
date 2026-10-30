@@ -9,7 +9,7 @@ import Shared
 /// stays UI only. Search/filter/sort/toggle/retry logic itself lives in Kotlin.
 @MainActor
 @Observable
-final class TaskListScreenModel {
+final class TaskListViewModel {
     enum Content {
         case loading
         case error
@@ -25,7 +25,7 @@ final class TaskListScreenModel {
         .map { PickerOption(value: $0, title: $0.displayName) }
 
     /// Created when the "New Task" sheet opens, released (→ Kotlin `clear()`) when it closes.
-    var newTaskEditor: TaskEditorScreenModel?
+    var newTaskEditor: TaskEditorViewModel?
 
     private let shared: TaskListModel
     private let app: AppDependencies
@@ -86,11 +86,11 @@ final class TaskListScreenModel {
     }
 
     func showNewTaskEditor() {
-        newTaskEditor = app.makeTaskEditorScreenModel(taskId: nil)
+        newTaskEditor = app.makeTaskEditorViewModel(taskId: nil)
     }
 
     /// Navigation factory for `navigationDestination(for: Int32.self)`.
-    func makeDetail(taskId: Int32) -> TaskDetailScreenModel {
-        app.makeTaskDetailScreenModel(taskId: taskId)
+    func makeDetail(taskId: Int32) -> TaskDetailViewModel {
+        app.makeTaskDetailViewModel(taskId: taskId)
     }
 }

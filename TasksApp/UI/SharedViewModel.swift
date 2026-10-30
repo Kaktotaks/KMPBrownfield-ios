@@ -3,7 +3,7 @@ import Observation
 import Shared
 
 // SharedViewModel: the ONE generic bridge around every Kotlin ViewModel from `shared` (step 4).
-// Screens do not use it directly: each per-screen Swift screen model (`UI/<Screen>/<Screen>ScreenModel`)
+// Screens do not use it directly: each per-screen Swift screen model (`UI/<Screen>/<Screen>ViewModel`)
 // owns one and turns its `state` into display-ready values, bindings and intents.
 //
 // The screens' logic (filtering, stats, validation, saving) lives in Kotlin
@@ -72,8 +72,11 @@ final class SharedViewModel<VM: TasksViewModel, UiState> {
 extension SharedViewModel: Identifiable {}
 
 // One alias per screen: Kotlin ViewModel + its Kotlin UiState.
-typealias TaskListModel = SharedViewModel<TaskListViewModel, TaskListUiState>
-typealias TaskDetailModel = SharedViewModel<TaskDetailViewModel, TaskDetailUiState>
-typealias TaskEditorModel = SharedViewModel<TaskEditorViewModel, TaskEditorUiState>
+// The Swift per-screen ViewModels (TaskListViewModel, ...) have the same names as the Kotlin ones,
+// so the Kotlin types are module-qualified here: `Shared.TaskListViewModel`. Inside the app module
+// an unqualified name means the Swift class (local declarations shadow imported ones).
+typealias TaskListModel = SharedViewModel<Shared.TaskListViewModel, TaskListUiState>
+typealias TaskDetailModel = SharedViewModel<Shared.TaskDetailViewModel, TaskDetailUiState>
+typealias TaskEditorModel = SharedViewModel<Shared.TaskEditorViewModel, TaskEditorUiState>
 /// `StatsUiState` is a Kotlin sealed interface → ObjC protocol → existential.
-typealias StatsModel = SharedViewModel<StatsViewModel, any StatsUiState>
+typealias StatsModel = SharedViewModel<Shared.StatsViewModel, any StatsUiState>

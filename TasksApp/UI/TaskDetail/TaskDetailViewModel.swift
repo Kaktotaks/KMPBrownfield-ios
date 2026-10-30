@@ -5,7 +5,7 @@ import Shared
 /// Swift screen model of the task detail screen. Wraps the shared Kotlin `TaskDetailViewModel`.
 @MainActor
 @Observable
-final class TaskDetailScreenModel {
+final class TaskDetailViewModel {
     /// Display-ready task details.
     struct Details: Equatable {
         let title: String
@@ -22,7 +22,7 @@ final class TaskDetailScreenModel {
     }
 
     /// Created when the edit sheet opens, released (→ Kotlin `clear()`) when it closes.
-    var editor: TaskEditorScreenModel?
+    var editor: TaskEditorViewModel?
 
     private let shared: TaskDetailModel
     private let app: AppDependencies
@@ -64,6 +64,6 @@ final class TaskDetailScreenModel {
     }
 
     func showEditor() {
-        editor = app.makeTaskEditorScreenModel(taskId: shared.viewModel.taskId)
+        editor = app.makeTaskEditorViewModel(taskId: shared.viewModel.taskId)
     }
 }

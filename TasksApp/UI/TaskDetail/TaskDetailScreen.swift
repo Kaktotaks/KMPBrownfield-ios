@@ -1,10 +1,10 @@
 import SwiftUI
 import Shared
 
-/// Task detail. UI only: display state and intents live in `TaskDetailScreenModel`.
+/// Task detail. UI only: display state and intents live in `TaskDetailViewModel`.
 @MainActor
 struct TaskDetailScreen: View {
-    @State var model: TaskDetailScreenModel
+    @State var model: TaskDetailViewModel
     @State private var isConfirmingDelete = false
     @Environment(\.dismiss) private var dismiss
 
@@ -41,8 +41,8 @@ struct TaskDetailScreen: View {
 /// Title, status, priority, due date, notes, toggle and delete buttons.
 @MainActor
 struct TaskDetailContent: View {
-    let details: TaskDetailScreenModel.Details
-    let model: TaskDetailScreenModel
+    let details: TaskDetailViewModel.Details
+    let model: TaskDetailViewModel
     @Binding var isConfirmingDelete: Bool
 
     var body: some View {

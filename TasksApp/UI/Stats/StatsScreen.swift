@@ -1,10 +1,10 @@
 import SwiftUI
 import Shared
 
-/// Stats tab. UI only: display-ready stats come from `StatsScreenModel`.
+/// Stats tab. UI only: display-ready stats come from `StatsViewModel`.
 @MainActor
 struct StatsScreen: View {
-    @State var model: StatsScreenModel
+    @State var model: StatsViewModel
 
     var body: some View {
         NavigationStack {

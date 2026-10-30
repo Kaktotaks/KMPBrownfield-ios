@@ -5,7 +5,7 @@ import Shared
 /// Swift screen model of the Stats tab. Wraps the shared Kotlin `StatsViewModel`.
 @MainActor
 @Observable
-final class StatsScreenModel {
+final class StatsViewModel {
     enum Content {
         case loading
         case error

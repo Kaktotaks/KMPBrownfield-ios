@@ -4,7 +4,7 @@ import Shared
 
 /// Swift screen models: Kotlin `uiState` → display-ready values, bindings → Kotlin events.
 @MainActor
-final class ScreenModelTests: XCTestCase {
+final class ViewModelTests: XCTestCase {
     private var today: LocalDate { IosDates.shared.toLocalDate(date: Date()) }
 
     /// 29 Oct 2026 — in the past from the moment these tests were written.
@@ -22,7 +22,7 @@ final class ScreenModelTests: XCTestCase {
     }
 
     /// `uiState` uses stateIn(WhileSubscribed): it reaches Swift asynchronously via the bridge's loop.
-    private func rows(of model: TaskListScreenModel, where condition: ([TaskRowItem]) -> Bool) async throws -> [TaskRowItem]? {
+    private func rows(of model: TasksApp.TaskListViewModel, where condition: ([TaskRowItem]) -> Bool) async throws -> [TaskRowItem]? {
         for _ in 0..<40 {
             if case .loaded(let rows) = model.content, condition(rows) {
                 return rows
@@ -32,12 +32,12 @@ final class ScreenModelTests: XCTestCase {
         return nil
     }
 
-    func testTaskListScreenModelMapsRowsAndForwardsQuery() async throws {
+    func testTaskListViewModelMapsRowsAndForwardsQuery() async throws {
         let app = makeApp(tasks: [
             TaskItem(id: 1, title: "Buy milk", notes: "", priority: .high, dueDate: oct29, isDone: false),
             TaskItem(id: 2, title: "Call mom", notes: "", priority: .low, dueDate: today, isDone: true),
         ])
-        let model = app.makeTaskListScreenModel()
+        let model = app.makeTaskListViewModel()
         guard case .loading = model.content else {
             return XCTFail("expected Loading before load")
         }
@@ -59,10 +59,10 @@ final class ScreenModelTests: XCTestCase {
         XCTAssertEqual(filtered?.map(\.id), [1])
     }
 
-    func testTaskEditorScreenModelBindingsAndSave() async throws {
+    func testTaskEditorViewModelBindingsAndSave() async throws {
         let app = makeApp(tasks: [])
         await app.loadIfNeeded()
-        let editor = app.makeTaskEditorScreenModel(taskId: nil)
+        let editor = app.makeTaskEditorViewModel(taskId: nil)
 
         XCTAssertEqual(editor.screenTitle, "New Task")
         XCTAssertFalse(editor.canSave)
@@ -81,15 +81,15 @@ final class ScreenModelTests: XCTestCase {
         XCTAssertEqual(app.repository.tasks.first?.priority, .high)
     }
 
-    func testTaskDetailScreenModelDetails() async throws {
+    func testTaskDetailViewModelDetails() async throws {
         let app = makeApp(tasks: [
             TaskItem(id: 7, title: "Pay rent", notes: "", priority: .medium, dueDate: oct29, isDone: false),
         ])
         await app.loadIfNeeded()
         // Kotlin initialValue reads repository.task(id) synchronously.
-        let model = app.makeTaskDetailScreenModel(taskId: 7)
+        let model = app.makeTaskDetailViewModel(taskId: 7)
 
-        XCTAssertEqual(model.details, TaskDetailScreenModel.Details(
+        XCTAssertEqual(model.details, TasksApp.TaskDetailViewModel.Details(
             title: "Pay rent",
             statusText: "Active",
             priority: .medium,

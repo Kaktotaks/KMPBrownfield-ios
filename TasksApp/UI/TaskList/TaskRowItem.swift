@@ -1,7 +1,7 @@
 import Foundation
 import Shared
 
-/// Display-ready row of the task list, mapped from the Kotlin `TaskItem` by `TaskListScreenModel`.
+/// Display-ready row of the task list, mapped from the Kotlin `TaskItem` by `TaskListViewModel`.
 struct TaskRowItem: Identifiable, Equatable {
     let id: Int32
     let title: String
