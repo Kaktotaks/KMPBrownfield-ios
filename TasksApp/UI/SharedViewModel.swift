@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 import Shared
 
 // SharedViewModel: the ONE generic bridge around every Kotlin ViewModel from `shared` (step 4).
@@ -65,6 +66,38 @@ final class SharedViewModel<VM: TasksViewModel, UiState> {
         let result = event(viewModel)
         state = currentValue()
         return result
+    }
+}
+
+// MARK: - Bindings to Kotlin state
+
+extension SharedViewModel {
+    /// A SwiftUI `Binding` that reads a field of the Kotlin `uiState` by key path and writes
+    /// changes back as a Kotlin event. Writing goes through `send`, which re-reads `uiState.value`
+    /// synchronously, so text fields don't lag.
+    ///
+    ///     var title: Binding<String> { shared.binding(\.title) { $0.onTitleChange(value: $1) } }
+    func binding<T>(
+        _ keyPath: KeyPath<UiState, T>,
+        _ event: @escaping (VM, T) -> Void
+    ) -> Binding<T> {
+        Binding(
+            get: { self.state[keyPath: keyPath] },
+            set: { newValue in self.send { event($0, newValue) } }
+        )
+    }
+
+    /// Same, with a conversion between the Kotlin and the SwiftUI type
+    /// (e.g. Kotlin `LocalDate` ↔ Swift `Date` for `DatePicker`).
+    func binding<T, U>(
+        _ keyPath: KeyPath<UiState, T>,
+        get toUI: @escaping (T) -> U,
+        set event: @escaping (VM, U) -> Void
+    ) -> Binding<U> {
+        Binding(
+            get: { toUI(self.state[keyPath: keyPath]) },
+            set: { newValue in self.send { event($0, newValue) } }
+        )
     }
 }
 

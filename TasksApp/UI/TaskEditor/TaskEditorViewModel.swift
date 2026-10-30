@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 import Shared
 
 /// Swift screen model of the New / Edit task sheet. Wraps the shared Kotlin `TaskEditorViewModel`
@@ -26,28 +27,15 @@ final class TaskEditorViewModel {
     var errorMessages: [String] { shared.state.errors.map(\.message) }
     var hasErrors: Bool { !shared.state.errors.isEmpty }
 
-    // MARK: - Bindable properties: read from Kotlin uiState, write as a Kotlin event
-    // `send` re-reads the Kotlin `MutableStateFlow` synchronously, so text fields don't lag.
+    // MARK: - Bindings: read from Kotlin uiState, write as a Kotlin event (SharedViewModel.binding)
 
-    var title: String {
-        get { shared.state.title }
-        set { shared.send { $0.onTitleChange(value: newValue) } }
-    }
-
-    var notes: String {
-        get { shared.state.notes }
-        set { shared.send { $0.onNotesChange(value: newValue) } }
-    }
-
-    var priority: Priority {
-        get { shared.state.priority }
-        set { shared.send { $0.onPriorityChange(value: newValue) } }
-    }
+    var title: Binding<String> { shared.binding(\.title) { $0.onTitleChange(value: $1) } }
+    var notes: Binding<String> { shared.binding(\.notes) { $0.onNotesChange(value: $1) } }
+    var priority: Binding<Priority> { shared.binding(\.priority) { $0.onPriorityChange(value: $1) } }
 
     /// SwiftUI `DatePicker` works with `Date`, Kotlin with `LocalDate` (IosDates helpers).
-    var dueDate: Date {
-        get { shared.state.dueDate.asDate }
-        set { shared.send { $0.onDueDateChange(value: newValue.asLocalDate) } }
+    var dueDate: Binding<Date> {
+        shared.binding(\.dueDate, get: \.asDate) { $0.onDueDateChange(value: $1.asLocalDate) }
     }
 
     // MARK: - Intents

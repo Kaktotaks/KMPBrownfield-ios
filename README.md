@@ -192,6 +192,14 @@ and inline closures call a single intent (`{ model.retry() }`, `{ if model.save(
 `AppDependencies` builds view models (`makeTaskListViewModel()` …) and passes itself to the
 ones that create child models (list → detail/editor, detail → editor).
 
+### Bindings to Kotlin state
+Two-way fields are `Binding`s built by one generic helper on the bridge,
+`SharedViewModel.binding(\.field) { vm, value in vm.onFieldChange(value: value) }` (plus a variant
+with a conversion, e.g. `LocalDate` ↔ `Date`). Each ViewModel property is a one-liner, e.g.
+`var title: Binding<String> { shared.binding(\.title) { $0.onTitleChange(value: $1) } }`, and views
+pass it straight through: `TextField("Title", text: model.title)` (no `$`, no `@Bindable`).
+Reads come from the Kotlin `uiState` (single source of truth); writes are Kotlin events.
+
 ## Run
 
 1. Open `TasksApp.xcodeproj` in Xcode (16 or newer — the project uses objectVersion 77).

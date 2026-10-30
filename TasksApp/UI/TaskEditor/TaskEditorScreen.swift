@@ -5,21 +5,21 @@ import Shared
 /// change to the Kotlin `TaskEditorViewModel` (form state + live validation).
 @MainActor
 struct TaskEditorScreen: View {
-    @Bindable var model: TaskEditorViewModel
+    let model: TaskEditorViewModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Title", text: $model.title)
-                    TextField("Notes", text: $model.notes, axis: .vertical)
+                    TextField("Title", text: model.title)
+                    TextField("Notes", text: model.notes, axis: .vertical)
                         .lineLimit(3...8)
                 }
 
                 Section {
-                    SegmentedPicker(title: "Priority", selection: $model.priority, options: model.priorityOptions)
-                    DatePicker("Due date", selection: $model.dueDate, displayedComponents: .date)
+                    SegmentedPicker(title: "Priority", selection: model.priority, options: model.priorityOptions)
+                    DatePicker("Due date", selection: model.dueDate, displayedComponents: .date)
                 }
 
                 if model.hasErrors {

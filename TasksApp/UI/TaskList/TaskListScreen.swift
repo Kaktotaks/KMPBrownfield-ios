@@ -27,7 +27,7 @@ struct TaskListScreen: View {
                 }
             }
             .navigationTitle("Tasks")
-            .searchable(text: $model.query, prompt: "Search tasks")
+            .searchable(text: model.query, prompt: "Search tasks")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     SortMenu(model: model)
@@ -54,10 +54,10 @@ struct TaskListScreen: View {
 /// Segmented "All / Active / Done" filter above the list.
 @MainActor
 struct StatusFilterBar: View {
-    @Bindable var model: TaskListViewModel
+    let model: TaskListViewModel
 
     var body: some View {
-        SegmentedPicker(title: "Status", selection: $model.status, options: model.statusOptions)
+        SegmentedPicker(title: "Status", selection: model.status, options: model.statusOptions)
             .padding(.horizontal)
             .padding(.vertical, 8)
     }
@@ -66,11 +66,11 @@ struct StatusFilterBar: View {
 /// Toolbar menu: "Sort by due date" / "Sort by priority".
 @MainActor
 struct SortMenu: View {
-    @Bindable var model: TaskListViewModel
+    let model: TaskListViewModel
 
     var body: some View {
         Menu {
-            Picker("Sort", selection: $model.sort) {
+            Picker("Sort", selection: model.sort) {
                 ForEach(model.sortOptions) { option in
                     Text(option.title).tag(option.value)
                 }

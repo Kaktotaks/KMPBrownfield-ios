@@ -53,8 +53,8 @@ final class ViewModelTests: XCTestCase {
         ])
 
         // Bindable property: stored locally (no lag) and forwarded to Kotlin `onQueryChange`.
-        model.query = "milk"
-        XCTAssertEqual(model.query, "milk")
+        model.query.wrappedValue = "milk"
+        XCTAssertEqual(model.query.wrappedValue, "milk")
         let filtered = try await rows(of: model) { $0.count == 1 }
         XCTAssertEqual(filtered?.map(\.id), [1])
     }
@@ -69,10 +69,10 @@ final class ViewModelTests: XCTestCase {
         XCTAssertEqual(editor.errorMessages, ["Title must be at least 3 characters."])
 
         // Setter → Kotlin event; `send` re-reads the MutableStateFlow synchronously.
-        editor.title = "Write tests"
-        editor.priority = .high
-        XCTAssertEqual(editor.title, "Write tests")
-        XCTAssertEqual(editor.priority, .high)
+        editor.title.wrappedValue = "Write tests"
+        editor.priority.wrappedValue = .high
+        XCTAssertEqual(editor.title.wrappedValue, "Write tests")
+        XCTAssertEqual(editor.priority.wrappedValue, .high)
         XCTAssertTrue(editor.canSave)
         XCTAssertFalse(editor.hasErrors)
 

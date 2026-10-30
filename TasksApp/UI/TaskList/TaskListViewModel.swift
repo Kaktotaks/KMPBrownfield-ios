@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 import Shared
 
 /// Swift screen model of the Tasks tab ("local ViewModel", SwiftUI-style).
@@ -55,25 +56,22 @@ final class TaskListViewModel {
         }
     }
 
-    // MARK: - Bindable properties (get from uiState / local, set → Kotlin event)
+    // MARK: - Bindings: read from Kotlin uiState, write as a Kotlin event (SharedViewModel.binding)
 
-    var query: String {
-        get { queryText }
-        set {
-            queryText = newValue
-            shared.send { $0.onQueryChange(value: newValue) }
-        }
+    /// The search text is kept locally (Kotlin's `uiState` updates asynchronously and typing would
+    /// jump) and forwarded to Kotlin on every change — so this one Binding is written by hand.
+    var query: Binding<String> {
+        Binding(
+            get: { self.queryText },
+            set: { newValue in
+                self.queryText = newValue
+                self.shared.send { $0.onQueryChange(value: newValue) }
+            }
+        )
     }
 
-    var status: StatusFilter {
-        get { shared.state.status }
-        set { shared.send { $0.onStatusChange(value: newValue) } }
-    }
-
-    var sort: SortOrder {
-        get { shared.state.sort }
-        set { shared.send { $0.onSortChange(value: newValue) } }
-    }
+    var status: Binding<StatusFilter> { shared.binding(\.status) { $0.onStatusChange(value: $1) } }
+    var sort: Binding<SortOrder> { shared.binding(\.sort) { $0.onSortChange(value: $1) } }
 
     // MARK: - Intents
 
