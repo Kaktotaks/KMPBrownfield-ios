@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// "Due 29 Oct 2026" (already formatted by the screen model) and, if overdue, a red "Overdue".
+/// "Due 29 Oct 2026" (already formatted by the Swift ViewModel) and, if overdue, a red "Overdue".
 struct DueDateLine: View {
     let dueText: String
     let isOverdue: Bool

@@ -2,23 +2,20 @@ import XCTest
 import Shared
 @testable import TasksApp
 
-/// Swift screen models: Kotlin `uiState` → display-ready values, bindings → Kotlin events.
+/// Swift ViewModels: Kotlin `uiState` → display-ready values, bindings → Kotlin events.
 @MainActor
 final class ViewModelTests: XCTestCase {
-    private var today: LocalDate { IosDates.shared.toLocalDate(date: Date()) }
-
-    /// 29 Oct 2026 — in the past from the moment these tests were written.
-    private var oct29: LocalDate {
-        let date = Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 29))!
-        return IosDates.shared.toLocalDate(date: date)
-    }
+    /// Fixed "today" = 30 Oct 2026, so 29 Oct is always overdue regardless of the real date.
+    private let clock = FixedDateProvider(year: 2026, month: 10, day: 30)
+    private var today: LocalDate { clock.today() }
+    private var oct29: LocalDate { LocalDate(year: 2026, month: 10, day: 29) }
 
     private func makeApp(tasks: [TaskItem]) -> AppDependencies {
         let repository = TaskRepository(
             api: FakeTaskApi(result: .success(tasks)),
-            dateProvider: SystemDateProvider.shared
+            dateProvider: clock
         )
-        return AppDependencies(repository: repository, dateProvider: SystemDateProvider.shared)
+        return AppDependencies(repository: repository, dateProvider: clock)
     }
 
     /// `uiState` uses stateIn(WhileSubscribed): it reaches Swift asynchronously via the bridge's loop.

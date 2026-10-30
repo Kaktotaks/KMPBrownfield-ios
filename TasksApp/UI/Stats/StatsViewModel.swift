@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import Shared
 
-/// Swift screen model of the Stats tab. Wraps the shared Kotlin `StatsViewModel`.
+/// Swift ViewModel of the Stats tab. Wraps the shared Kotlin `StatsViewModel`.
 @MainActor
 @Observable
 final class StatsViewModel {

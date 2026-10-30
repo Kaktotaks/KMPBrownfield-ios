@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import Shared
 
-/// Swift screen model of the task detail screen. Wraps the shared Kotlin `TaskDetailViewModel`.
+/// Swift ViewModel of the task detail screen. Wraps the shared Kotlin `TaskDetailViewModel`.
 @MainActor
 @Observable
 final class TaskDetailViewModel {
@@ -44,7 +44,7 @@ final class TaskDetailViewModel {
             priority: task.priority,
             dueText: TaskRowItem.dueText(task.dueDate),
             isOverdue: task.isOverdue(today: state.today),
-            notes: task.notes.isEmpty ? nil : task.notes,
+            notes: task.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : task.notes,
             toggleTitle: TaskRowItem.toggleTitle(isDone: task.isDone)
         )
     }
@@ -65,5 +65,16 @@ final class TaskDetailViewModel {
 
     func showEditor() {
         editor = app.makeTaskEditorViewModel(taskId: shared.viewModel.taskId)
+    }
+}
+
+/// `navigationDestination(item:)` needs Hashable: identity of this ViewModel instance.
+extension TaskDetailViewModel: Hashable {
+    nonisolated static func == (lhs: TaskDetailViewModel, rhs: TaskDetailViewModel) -> Bool {
+        lhs === rhs
+    }
+
+    nonisolated func hash(into hasher: inout Hasher) {
+        hasher.combine(ObjectIdentifier(self))
     }
 }

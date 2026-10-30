@@ -21,6 +21,18 @@ final class FakeTaskApi: NSObject, TaskApi {
     }
 }
 
+/// Swift implementation of the Kotlin `fun interface DateProvider` (a plain, non-suspend
+/// requirement → no SKIE renaming). NSObject subclass: Kotlin interfaces are ObjC protocols.
+final class FixedDateProvider: NSObject, DateProvider {
+    private let date: LocalDate
+
+    init(year: Int32, month: Int32, day: Int32) {
+        date = LocalDate(year: year, month: month, day: day)
+    }
+
+    func today() -> LocalDate { date }
+}
+
 /// Smoke tests: the shared Kotlin data layer (TaskRepository) is usable from Swift.
 /// Repository behaviour itself is tested once, in shared/src/commonTest.
 @MainActor

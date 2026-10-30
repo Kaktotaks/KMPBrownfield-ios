@@ -118,7 +118,7 @@ What changed on the Swift side (the "raw interop" notes above are kept for compa
 
 ## Shared ViewModels (step 4)
 
-The Swift ViewModels (`UI/*/…ViewModel.swift`) and the `TaskStore` adapter were removed. Filtering
+The original hand-written Swift ViewModels and the `TaskStore` adapter were removed. Filtering
 (`TaskFilter`), stats (`StatsCalculator`), live validation (`TaskValidator`), saving and the
 loading/error/retry states now live in the Kotlin ViewModels in `shared/.../presentation` — the
 same classes the Android app uses.

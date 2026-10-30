@@ -3,8 +3,8 @@ import Observation
 import SwiftUI
 import Shared
 
-/// Swift screen model of the New / Edit task sheet. Wraps the shared Kotlin `TaskEditorViewModel`
-/// (form state + live validation + save). Created by the presenting screen model when the sheet
+/// Swift ViewModel of the New / Edit task sheet. Wraps the shared Kotlin `TaskEditorViewModel`
+/// (form state + live validation + save). Created by the presenting ViewModel when the sheet
 /// opens (`sheet(item:)`), so there is exactly one Kotlin ViewModel per presentation.
 @MainActor
 @Observable

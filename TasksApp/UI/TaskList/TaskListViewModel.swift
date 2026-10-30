@@ -3,7 +3,7 @@ import Observation
 import SwiftUI
 import Shared
 
-/// Swift screen model of the Tasks tab ("local ViewModel", SwiftUI-style).
+/// Swift ViewModel of the Tasks tab ("local ViewModel", SwiftUI-style).
 ///
 /// Wraps the shared Kotlin `TaskListViewModel` (through the generic `SharedViewModel` bridge) and turns
 /// its `uiState` into display-ready values, bindable properties and intents, so `TaskListScreen`
@@ -27,6 +27,9 @@ final class TaskListViewModel {
 
     /// Created when the "New Task" sheet opens, released (→ Kotlin `clear()`) when it closes.
     var newTaskEditor: TaskEditorViewModel?
+    /// Pushed detail screen. Created once on tap and released (→ Kotlin `clear()`) on pop.
+    /// (A `navigationDestination(for:)` closure would build a new Kotlin VM on every re-render.)
+    var detail: TaskDetailViewModel?
 
     private let shared: TaskListModel
     private let app: AppDependencies
@@ -87,8 +90,7 @@ final class TaskListViewModel {
         newTaskEditor = app.makeTaskEditorViewModel(taskId: nil)
     }
 
-    /// Navigation factory for `navigationDestination(for: Int32.self)`.
-    func makeDetail(taskId: Int32) -> TaskDetailViewModel {
-        app.makeTaskDetailViewModel(taskId: taskId)
+    func openDetail(id: Int32) {
+        detail = app.makeTaskDetailViewModel(taskId: id)
     }
 }

@@ -12,7 +12,7 @@ struct TaskRow: View {
                     .font(.title2)
                     .foregroundStyle(item.isDone ? Color.accentColor : Color.secondary)
             }
-            // Borderless so tapping the circle doesn't trigger the row's NavigationLink.
+            // Borderless so tapping the circle doesn't also trigger the row's button (open detail).
             .buttonStyle(.borderless)
             .accessibilityLabel(item.toggleTitle)
 
@@ -26,7 +26,13 @@ struct TaskRow: View {
             Spacer(minLength: 8)
 
             PriorityBadge(priority: item.priority)
+
+            // Rows are Buttons (the list VM owns navigation), so draw the disclosure chevron ourselves.
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color(uiColor: .tertiaryLabel))
         }
+        .contentShape(Rectangle())
         .padding(.vertical, 2)
     }
 }

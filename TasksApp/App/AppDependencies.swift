@@ -5,7 +5,7 @@ import Shared
 ///
 /// Owns the single Kotlin `TaskRepository`, the `TaskValidator` and the `DateProvider`, loads the
 /// tasks once on start, and creates the Kotlin ViewModels wrapped in `SharedViewModel` and the
-/// Swift screen models around them. It is not observed by SwiftUI: screens observe their own screen model.
+/// Swift ViewModels around them. It is not observed by SwiftUI: screens observe their own ViewModel.
 @MainActor
 final class AppDependencies {
     let repository: TaskRepository
@@ -26,6 +26,11 @@ final class AppDependencies {
             dateProvider: dateProvider
         )
     }
+
+    /// Root tab ViewModels live as long as the app; created once (not in `RootView.body`,
+    /// which SwiftUI may re-evaluate and would build new Kotlin VMs each time).
+    private(set) lazy var taskListViewModel: TaskListViewModel = makeTaskListViewModel()
+    private(set) lazy var statsViewModel: StatsViewModel = makeStatsViewModel()
 
     // MARK: - Loading
 
@@ -64,7 +69,7 @@ final class AppDependencies {
         return StatsModel(vm, states: vm.uiState, value: { vm.uiState.value })
     }
 
-    // MARK: - Screen model factories (what the SwiftUI screens hold)
+    // MARK: - Swift ViewModel factories (what the SwiftUI screens hold)
 
     func makeTaskListViewModel() -> TaskListViewModel {
         TaskListViewModel(shared: makeTaskList(), app: self)

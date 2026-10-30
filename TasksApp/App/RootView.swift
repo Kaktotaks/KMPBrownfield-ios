@@ -9,12 +9,12 @@ struct RootView: View {
 
     var body: some View {
         TabView {
-            TaskListScreen(model: app.makeTaskListViewModel())
+            TaskListScreen(model: app.taskListViewModel)
                 .tabItem {
                     Label("Tasks", systemImage: "list.bullet")
                 }
 
-            StatsScreen(model: app.makeStatsViewModel())
+            StatsScreen(model: app.statsViewModel)
                 .tabItem {
                     Label("Stats", systemImage: "chart.bar")
                 }

@@ -1,7 +1,7 @@
 import SwiftUI
 import Shared
 
-/// Tasks tab. UI only: state mapping, bindings and navigation factories live in `TaskListViewModel`.
+/// Tasks tab. UI only: state mapping, bindings and navigation state live in `TaskListViewModel`.
 @MainActor
 struct TaskListScreen: View {
     @State var model: TaskListViewModel
@@ -41,8 +41,8 @@ struct TaskListScreen: View {
                     .accessibilityLabel("New Task")
                 }
             }
-            .navigationDestination(for: Int32.self) { taskId in
-                TaskDetailScreen(model: model.makeDetail(taskId: taskId))
+            .navigationDestination(item: $model.detail) { detail in
+                TaskDetailScreen(model: detail)
             }
             .sheet(item: $model.newTaskEditor) { editor in
                 TaskEditorScreen(model: editor)
@@ -82,7 +82,7 @@ struct SortMenu: View {
     }
 }
 
-/// The loaded, non-empty list; rows push the detail screen by task id.
+/// The loaded, non-empty list; tapping a row pushes the detail screen (`model.openDetail`).
 @MainActor
 struct TaskRowsList: View {
     let model: TaskListViewModel
@@ -90,9 +90,12 @@ struct TaskRowsList: View {
 
     var body: some View {
         List(rows) { row in
-            NavigationLink(value: row.id) {
+            Button {
+                model.openDetail(id: row.id)
+            } label: {
                 TaskRow(item: row) { model.toggle(id: row.id) }
             }
+            .foregroundStyle(Color.primary)
         }
         .listStyle(.plain)
     }
