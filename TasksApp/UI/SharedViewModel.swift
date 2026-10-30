@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 import SwiftUI
 import Shared
 
@@ -9,8 +9,8 @@ import Shared
 //
 // The screens' logic (filtering, stats, validation, saving) lives in Kotlin
 // (`...shared.presentation`). Swift still has to:
-//   1. Observe `uiState`: SwiftUI only sees Swift `@Observable` objects, so the Kotlin
-//      `StateFlow` is mirrored into `state` with a `for await` loop (SKIE turns StateFlow into a
+//   1. Observe `uiState`: SwiftUI only sees Swift `ObservableObject`s, so the Kotlin
+//      `StateFlow` is mirrored into the `@Published state` with a `for await` loop (SKIE turns StateFlow into a
 //      typed AsyncSequence). The loop must keep running: Kotlin uses `stateIn(WhileSubscribed)`,
 //      so `uiState` only updates while someone collects it.
 //   2. Destroy the Kotlin ViewModel: iOS has no ViewModelStoreOwner, so `deinit` calls the iosMain
@@ -20,18 +20,18 @@ import Shared
 // Generic over the sequence type `S` instead of naming SKIE's flow class, so the only contract is
 // "an AsyncSequence of UiState" plus a way to read the current `uiState.value`.
 @MainActor
-@Observable
-final class SharedViewModel<VM: TasksViewModel, UiState> {
+final class SharedViewModel<VM: TasksViewModel, UiState>: ObservableObject {
     /// The Kotlin ViewModel. `nonisolated(unsafe)` so the nonisolated `deinit` can `clear()` it
     /// (Swift 5 mode has no `isolated deinit`); everything else uses it on the main actor.
     nonisolated(unsafe) let viewModel: VM
 
-    /// Mirror of Kotlin `viewModel.uiState`; SwiftUI views read this.
-    private(set) var state: UiState
+    /// Mirror of Kotlin `viewModel.uiState`. Swift ViewModels re-publish its changes
+    /// (they forward this object's `objectWillChange`, see `TaskListViewModel.init`).
+    @Published private(set) var state: UiState
 
     /// Reads `viewModel.uiState.value` (typed thanks to SKIE).
-    @ObservationIgnored private let currentValue: () -> UiState
-    @ObservationIgnored nonisolated(unsafe) private var observation: Task<Void, Never>?
+    private let currentValue: () -> UiState
+    nonisolated(unsafe) private var observation: Task<Void, Never>?
 
     init<S: AsyncSequence>(
         _ viewModel: VM,

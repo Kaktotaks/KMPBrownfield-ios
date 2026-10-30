@@ -1,21 +1,24 @@
+import Combine
 import Foundation
-import Observation
 import Shared
 
 /// Swift ViewModel of the Stats tab. Wraps the shared Kotlin `StatsViewModel`.
 @MainActor
-@Observable
-final class StatsViewModel {
+final class StatsViewModel: ObservableObject {
     enum Content {
         case loading
         case error
         case loaded(StatsSummary)
     }
 
+    private var forwarding: AnyCancellable?
     private let shared: StatsModel
 
     init(shared: StatsModel) {
         self.shared = shared
+        // Nested ObservableObject: changes of `shared.state` don't reach SwiftUI by themselves
+        // (classic Combine pitfall), so re-publish them as this object's changes.
+        forwarding = shared.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
     }
 
     var content: Content {

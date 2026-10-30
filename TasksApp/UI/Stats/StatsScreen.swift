@@ -4,7 +4,12 @@ import Shared
 /// Stats tab. UI only: display-ready stats come from `StatsViewModel`.
 @MainActor
 struct StatsScreen: View {
-    @State var model: StatsViewModel
+    /// Owned by the screen; created once thanks to the autoclosure.
+    @StateObject private var model: StatsViewModel
+
+    init(model: @autoclosure @escaping () -> StatsViewModel) {
+        _model = StateObject(wrappedValue: model())
+    }
 
     var body: some View {
         NavigationStack {

@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 import SwiftUI
 import Shared
 
@@ -9,8 +9,7 @@ import Shared
 /// its `uiState` into display-ready values, bindable properties and intents, so `TaskListScreen`
 /// stays UI only. Search/filter/sort/toggle/retry logic itself lives in Kotlin.
 @MainActor
-@Observable
-final class TaskListViewModel {
+final class TaskListViewModel: ObservableObject {
     enum Content {
         case loading
         case error
@@ -26,20 +25,24 @@ final class TaskListViewModel {
         .map { PickerOption(value: $0, title: $0.displayName) }
 
     /// Created when the "New Task" sheet opens, released (→ Kotlin `clear()`) when it closes.
-    var newTaskEditor: TaskEditorViewModel?
+    @Published var newTaskEditor: TaskEditorViewModel?
     /// Pushed detail screen. Created once on tap and released (→ Kotlin `clear()`) on pop.
     /// (A `navigationDestination(for:)` closure would build a new Kotlin VM on every re-render.)
-    var detail: TaskDetailViewModel?
+    @Published var detail: TaskDetailViewModel?
 
+    private var forwarding: AnyCancellable?
     private let shared: TaskListModel
     private let app: AppDependencies
     /// Search text is stored here and forwarded to Kotlin: `uiState` (stateIn) updates
     /// asynchronously, and binding a TextField straight to it would make typing jump.
-    private var queryText = ""
+    @Published private var queryText = ""
 
     init(shared: TaskListModel, app: AppDependencies) {
         self.shared = shared
         self.app = app
+        // Nested ObservableObject: changes of `shared.state` don't reach SwiftUI by themselves
+        // (classic Combine pitfall), so re-publish them as this object's changes.
+        forwarding = shared.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
     }
 
     // MARK: - Display state

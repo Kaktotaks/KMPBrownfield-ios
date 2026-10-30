@@ -10,7 +10,7 @@ view models — see "Screen models (step 5)". An Android twin lives in `../andro
 
 - iOS 17.0+, Swift 5 mode, SwiftUI app lifecycle, no third-party Swift dependencies
 - Domain + Data + ViewModels from Kotlin: `Shared.framework` built from `../shared` on every Xcode build
-- Observation framework (`@Observable`) for the view models and the generic `SharedViewModel` bridge
+- Combine `ObservableObject` (`@Published`, `@StateObject` / `@ObservedObject`) for the view models and the generic `SharedViewModel` bridge
 - Data: `GET https://jsonplaceholder.typicode.com/todos?_limit=20`, loaded once on launch,
   then all changes live in memory
 
@@ -23,7 +23,7 @@ TasksApp/
                              AppDependencies (repository, validator, load on start,
                              Kotlin VM + view model factories)
   Shared+Interop.swift       typealiases + Date <-> LocalDate helpers for the Kotlin framework
-  UI/SharedViewModel.swift   generic @Observable bridge around a Kotlin ViewModel (observe + clear)
+  UI/SharedViewModel.swift   generic ObservableObject bridge around a Kotlin ViewModel (observe + clear)
   UI/TaskList/               TaskListViewModel, TaskRowItem, list screen (+ small subviews), row
   UI/TaskDetail/             TaskDetailViewModel, detail screen
   UI/TaskEditor/             TaskEditorViewModel, editor sheet
@@ -127,7 +127,7 @@ same classes the Android app uses.
 generic class for all four screens (`TaskListModel`, `TaskDetailModel`, `TaskEditorModel`,
 `StatsModel` typealiases). It:
 - **observes `uiState`**: starts `Task { for await s in vm.uiState { state = s } }` in `init`
-  (initial value from `vm.uiState.value`), mirroring it into an `@Observable` `state` SwiftUI can
+  (initial value from `vm.uiState.value`), mirroring it into a `@Published state` SwiftUI can
   track. The loop must keep running: Kotlin uses `stateIn(WhileSubscribed)`, so `uiState` only
   updates while collected;
 - **destroys the Kotlin VM**: iOS has no `ViewModelStoreOwner`, so `deinit` cancels the loop and
@@ -137,15 +137,17 @@ generic class for all four screens (`TaskListModel`, `TaskDetailModel`, `TaskEdi
   `uiState.value` synchronously (keeps text fields bound to the editor's `MutableStateFlow` smooth).
 
 `AppDependencies` (`App/`) owns one `TaskRepository` + `TaskValidator(dateProvider:)`, loads tasks
-once on start (`RootView.task`) and has a factory per Kotlin VM. Tab and detail screens create their
-model in `@State`; the editor model is created by the presenting screen when the sheet opens
+once on start (`RootView.task`) and has a factory per Kotlin VM. Tab screens own their
+model via `@StateObject` (autoclosure → created once); the detail and editor models are created by
+the presenting ViewModel (`detail` / `newTaskEditor` / `editor`) and observed with `@ObservedObject`;
+the editor model is created when the sheet opens
 (`sheet(item:)`), so there is exactly one Kotlin `TaskEditorViewModel` per presentation, cleared
 when the sheet closes. New task → `TaskEditorViewModel.companion.NEW_TASK_ID`.
 
 What stays native (Swift): SwiftUI views, navigation (`NavigationStack`, `navigationDestination`,
 sheets, `dismiss`), confirmation dialog, and the view models below.
 
-## Screen models (step 5)
+## Screen ViewModels (step 5)
 
 SwiftUI views are **UI only**: just `body` — no private funcs/computed sub-views, no computed
 `Binding`s, no `switch onEnum`, no mapping/formatting, no closures that talk to the Kotlin VM.
@@ -153,10 +155,10 @@ Everything else moved into a per-screen Swift **view model** ("local ViewModel",
 
 ```
 SwiftUI View (UI only)              TaskListScreen, TaskDetailScreen, TaskEditorScreen, StatsScreen
-   │  @State / @Bindable, $model.x
+   │  @StateObject (owns) / @ObservedObject (passed in), $model.x
    ▼
 ViewModel (Swift, @MainActor      TaskListViewModel, TaskDetailViewModel,
- @Observable)                       TaskEditorViewModel, StatsViewModel
+ ObservableObject)                  TaskEditorViewModel, StatsViewModel
    │  platform presentation: display-ready state, bindings, formatting,
    │  Date ↔ LocalDate, picker options, navigation/sheet factories
    ▼
@@ -197,8 +199,20 @@ Two-way fields are `Binding`s built by one generic helper on the bridge,
 `SharedViewModel.binding(\.field) { vm, value in vm.onFieldChange(value: value) }` (plus a variant
 with a conversion, e.g. `LocalDate` ↔ `Date`). Each ViewModel property is a one-liner, e.g.
 `var title: Binding<String> { shared.binding(\.title) { $0.onTitleChange(value: $1) } }`, and views
-pass it straight through: `TextField("Title", text: model.title)` (no `$`, no `@Bindable`).
+pass it straight through: `TextField("Title", text: model.title)` (no `$` needed).
 Reads come from the Kotlin `uiState` (single source of truth); writes are Kotlin events.
+
+### Why ObservableObject (not `@Observable`)
+Combine-based `ObservableObject` works on any iOS version the team supports, so it's the usual
+choice in brownfield apps. Points to remember (vs Observation on iOS 17+):
+- **Nested ObservableObject**: each Swift ViewModel holds a `SharedViewModel` (itself an
+  ObservableObject). Its changes don't reach SwiftUI automatically, so every ViewModel forwards
+  `shared.objectWillChange` into its own `objectWillChange`.
+- **Whole-object invalidation**: any `@Published` change re-renders every view observing the object
+  (Observation tracks per property). Sub-views therefore take the model as `@ObservedObject`;
+  a plain `let` reference would not refresh them.
+- **Ownership**: `@StateObject(wrappedValue:)` is an autoclosure, so the ViewModel (and its Kotlin VM)
+  is created once per screen lifetime; `@ObservedObject` for objects owned elsewhere.
 
 ## Run
 

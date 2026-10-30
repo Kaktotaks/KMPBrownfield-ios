@@ -5,7 +5,8 @@ import Shared
 /// change to the Kotlin `TaskEditorViewModel` (form state + live validation).
 @MainActor
 struct TaskEditorScreen: View {
-    let model: TaskEditorViewModel
+    /// Owned by the presenting ViewModel (`newTaskEditor` / `editor`) → observed, not owned.
+    @ObservedObject var model: TaskEditorViewModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {

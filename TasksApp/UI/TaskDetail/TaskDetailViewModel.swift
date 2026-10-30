@@ -1,11 +1,10 @@
+import Combine
 import Foundation
-import Observation
 import Shared
 
 /// Swift ViewModel of the task detail screen. Wraps the shared Kotlin `TaskDetailViewModel`.
 @MainActor
-@Observable
-final class TaskDetailViewModel {
+final class TaskDetailViewModel: ObservableObject {
     /// Display-ready task details.
     struct Details: Equatable {
         let title: String
@@ -22,14 +21,18 @@ final class TaskDetailViewModel {
     }
 
     /// Created when the edit sheet opens, released (→ Kotlin `clear()`) when it closes.
-    var editor: TaskEditorViewModel?
+    @Published var editor: TaskEditorViewModel?
 
+    private var forwarding: AnyCancellable?
     private let shared: TaskDetailModel
     private let app: AppDependencies
 
     init(shared: TaskDetailModel, app: AppDependencies) {
         self.shared = shared
         self.app = app
+        // Nested ObservableObject: changes of `shared.state` don't reach SwiftUI by themselves
+        // (classic Combine pitfall), so re-publish them as this object's changes.
+        forwarding = shared.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
     }
 
     // MARK: - Display state

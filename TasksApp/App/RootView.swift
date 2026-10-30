@@ -9,12 +9,13 @@ struct RootView: View {
 
     var body: some View {
         TabView {
-            TaskListScreen(model: app.taskListViewModel)
+            // @StateObject autoclosure: the factory runs once per screen lifetime.
+            TaskListScreen(model: app.makeTaskListViewModel())
                 .tabItem {
                     Label("Tasks", systemImage: "list.bullet")
                 }
 
-            StatsScreen(model: app.statsViewModel)
+            StatsScreen(model: app.makeStatsViewModel())
                 .tabItem {
                     Label("Stats", systemImage: "chart.bar")
                 }

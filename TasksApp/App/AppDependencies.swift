@@ -27,11 +27,6 @@ final class AppDependencies {
         )
     }
 
-    /// Root tab ViewModels live as long as the app; created once (not in `RootView.body`,
-    /// which SwiftUI may re-evaluate and would build new Kotlin VMs each time).
-    private(set) lazy var taskListViewModel: TaskListViewModel = makeTaskListViewModel()
-    private(set) lazy var statsViewModel: StatsViewModel = makeStatsViewModel()
-
     // MARK: - Loading
 
     /// Loads tasks once on app start; a no-op after a successful load.

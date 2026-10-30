@@ -4,7 +4,8 @@ import Shared
 /// Task detail. UI only: display state and intents live in `TaskDetailViewModel`.
 @MainActor
 struct TaskDetailScreen: View {
-    @State var model: TaskDetailViewModel
+    /// Owned by `TaskListViewModel.detail` (created on tap, released on pop) → observed, not owned.
+    @ObservedObject var model: TaskDetailViewModel
     @State private var isConfirmingDelete = false
     @Environment(\.dismiss) private var dismiss
 
@@ -42,7 +43,7 @@ struct TaskDetailScreen: View {
 @MainActor
 struct TaskDetailContent: View {
     let details: TaskDetailViewModel.Details
-    let model: TaskDetailViewModel
+    @ObservedObject var model: TaskDetailViewModel
     @Binding var isConfirmingDelete: Bool
 
     var body: some View {

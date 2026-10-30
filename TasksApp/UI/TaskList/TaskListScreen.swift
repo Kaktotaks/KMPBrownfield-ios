@@ -4,7 +4,13 @@ import Shared
 /// Tasks tab. UI only: state mapping, bindings and navigation state live in `TaskListViewModel`.
 @MainActor
 struct TaskListScreen: View {
-    @State var model: TaskListViewModel
+    /// The screen owns its ViewModel. `StateObject(wrappedValue:)` takes an autoclosure, so the
+    /// ViewModel (and its Kotlin VM) is created once, not on every re-creation of this struct.
+    @StateObject private var model: TaskListViewModel
+
+    init(model: @autoclosure @escaping () -> TaskListViewModel) {
+        _model = StateObject(wrappedValue: model())
+    }
 
     var body: some View {
         NavigationStack {
@@ -54,7 +60,7 @@ struct TaskListScreen: View {
 /// Segmented "All / Active / Done" filter above the list.
 @MainActor
 struct StatusFilterBar: View {
-    let model: TaskListViewModel
+    @ObservedObject var model: TaskListViewModel
 
     var body: some View {
         SegmentedPicker(title: "Status", selection: model.status, options: model.statusOptions)
@@ -66,7 +72,7 @@ struct StatusFilterBar: View {
 /// Toolbar menu: "Sort by due date" / "Sort by priority".
 @MainActor
 struct SortMenu: View {
-    let model: TaskListViewModel
+    @ObservedObject var model: TaskListViewModel
 
     var body: some View {
         Menu {
@@ -85,7 +91,7 @@ struct SortMenu: View {
 /// The loaded, non-empty list; tapping a row pushes the detail screen (`model.openDetail`).
 @MainActor
 struct TaskRowsList: View {
-    let model: TaskListViewModel
+    @ObservedObject var model: TaskListViewModel
     let rows: [TaskRowItem]
 
     var body: some View {

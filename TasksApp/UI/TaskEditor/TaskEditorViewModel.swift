@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 import SwiftUI
 import Shared
 
@@ -7,16 +7,19 @@ import Shared
 /// (form state + live validation + save). Created by the presenting ViewModel when the sheet
 /// opens (`sheet(item:)`), so there is exactly one Kotlin ViewModel per presentation.
 @MainActor
-@Observable
-final class TaskEditorViewModel {
+final class TaskEditorViewModel: ObservableObject {
     /// Kotlin enums with SKIE are Swift enums, but not `CaseIterable`: the segment order is listed here.
     let priorityOptions: [PickerOption<Priority>] = [Priority.low, .medium, .high]
         .map { PickerOption(value: $0, title: $0.displayName) }
 
+    private var forwarding: AnyCancellable?
     private let shared: TaskEditorModel
 
     init(shared: TaskEditorModel) {
         self.shared = shared
+        // Nested ObservableObject: changes of `shared.state` don't reach SwiftUI by themselves
+        // (classic Combine pitfall), so re-publish them as this object's changes.
+        forwarding = shared.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
     }
 
     // MARK: - Display state
