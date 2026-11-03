@@ -5,13 +5,11 @@ import Shared
 struct TaskRowItem: Identifiable, Equatable {
     let id: Int32
     let title: String
-    /// "Due 29 Oct 2026"
-    let dueText: String
+    /// "5 Nov 2026" (shared `DateFormatting`); the "Due %@" copy is applied by the UI (`DueLine`).
+    let dueDate: String
     let isOverdue: Bool
     let isDone: Bool
     let priority: Priority
-    /// "Mark as done" / "Mark as active" (accessibility label of the toggle button).
-    let toggleTitle: String
 }
 
 extension TaskRowItem {
@@ -19,20 +17,15 @@ extension TaskRowItem {
         self.init(
             id: task.id,
             title: task.title,
-            dueText: Self.dueText(task.dueDate),
+            dueDate: Self.formatted(task.dueDate),
             isOverdue: task.isOverdue(today: today),
             isDone: task.isDone,
-            priority: task.priority,
-            toggleTitle: Self.toggleTitle(isDone: task.isDone)
+            priority: task.priority
         )
     }
 
-    /// "Due 29 Oct 2026" via the shared Kotlin `DateFormatting` (same format on Android).
-    static func dueText(_ date: LocalDate) -> String {
-        "Due \(DateFormatting.shared.format(date: date))"
-    }
-
-    static func toggleTitle(isDone: Bool) -> String {
-        isDone ? "Mark as active" : "Mark as done"
+    /// "29 Oct 2026" via the shared Kotlin `DateFormatting` (same format on Android).
+    static func formatted(_ date: LocalDate) -> String {
+        DateFormatting.shared.format(date: date)
     }
 }

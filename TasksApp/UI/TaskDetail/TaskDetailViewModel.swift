@@ -8,20 +8,19 @@ final class TaskDetailViewModel: ObservableObject {
     /// Display-ready task details.
     struct Details: Equatable {
         let title: String
-        /// "Done" / "Active"
-        let statusText: String
+        let isDone: Bool
         let priority: Priority
-        /// "Due 29 Oct 2026"
-        let dueText: String
+        /// "5 Nov 2026"; the "Due %@" copy is applied by the UI.
+        let dueDate: String
         let isOverdue: Bool
-        /// `nil` → "No notes".
+        /// `nil` when blank (the notes card is hidden then).
         let notes: String?
-        /// "Mark as done" / "Mark as active"
-        let toggleTitle: String
     }
 
     /// Created when the edit sheet opens, released (→ Kotlin `clear()`) when it closes.
     @Published var editor: TaskEditorViewModel?
+    /// Set on delete so "Task not found" doesn't flash while the screen pops.
+    @Published private(set) var isDeleting = false
 
     private var forwarding: AnyCancellable?
     private let shared: TaskDetailModel
@@ -37,18 +36,17 @@ final class TaskDetailViewModel: ObservableObject {
 
     // MARK: - Display state
 
-    /// `nil` after the task was deleted (briefly visible while popping back).
+    /// `nil` after the task was deleted: the screen shows "Task not found".
     var details: Details? {
         let state = shared.state
         guard let task = state.task else { return nil }
         return Details(
             title: task.title,
-            statusText: task.isDone ? "Done" : "Active",
+            isDone: task.isDone,
             priority: task.priority,
-            dueText: TaskRowItem.dueText(task.dueDate),
+            dueDate: TaskRowItem.formatted(task.dueDate),
             isOverdue: task.isOverdue(today: state.today),
-            notes: task.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : task.notes,
-            toggleTitle: TaskRowItem.toggleTitle(isDone: task.isDone)
+            notes: task.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : task.notes
         )
     }
 
@@ -63,6 +61,7 @@ final class TaskDetailViewModel: ObservableObject {
     }
 
     func delete() {
+        isDeleting = true
         shared.send { $0.onDelete() }
     }
 
