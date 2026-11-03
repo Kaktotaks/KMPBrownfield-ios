@@ -4,7 +4,7 @@ import Shared
 
 /// Swift implementation of the Kotlin `TaskApi` interface (exported as an ObjC protocol).
 ///
-/// ⚡️ Interop gotcha: SKIE hides the original ObjC suspend requirement behind a `__` prefix
+/// Interop gotcha: SKIE hides the original ObjC suspend requirement behind a `__` prefix
 /// (`__fetchTasks(today:completionHandler:)` / `__fetchTasks(today:) async throws`) and gives
 /// *callers* its own Swift `async` wrapper `fetchTasks(today:)`. So to *implement* a Kotlin
 /// suspend interface in Swift you implement the `__`-prefixed requirement. Either form satisfies

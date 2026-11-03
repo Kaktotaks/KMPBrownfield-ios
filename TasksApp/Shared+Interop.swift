@@ -1,7 +1,7 @@
 import Foundation
 import Shared
 
-// Thin Swift adapters over the Kotlin `Shared` framework (direct integration, see README).
+// Thin Swift adapters over the Kotlin `Shared` framework (SPM binary XCFramework, see README).
 // The Swift Domain layer was removed: TaskItem, Priority, TaskValidator, TaskFilter,
 // StatsCalculator, DateFormatting, TodoMapper, DateProvider all come from Kotlin now.
 

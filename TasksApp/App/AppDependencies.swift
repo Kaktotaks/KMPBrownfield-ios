@@ -1,7 +1,7 @@
 import Foundation
 import Shared
 
-/// App-level composition root (replaces the step 2/3 `TaskStore` adapter).
+/// App-level composition root.
 ///
 /// Owns the single Kotlin `TaskRepository`, the `TaskValidator` and the `DateProvider`, loads the
 /// tasks once on start, and creates the Kotlin ViewModels wrapped in `SharedViewModel` and the

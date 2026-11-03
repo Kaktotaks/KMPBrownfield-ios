@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 import Shared
 
-// SharedViewModel: the ONE generic bridge around every Kotlin ViewModel from `shared` (step 4).
+// SharedViewModel: the ONE generic bridge around every Kotlin ViewModel from `shared`.
 // Screens do not use it directly: each per-screen Swift ViewModel (`UI/<Screen>/<Screen>ViewModel`)
 // owns one and turns its `state` into display-ready values, bindings and intents.
 //

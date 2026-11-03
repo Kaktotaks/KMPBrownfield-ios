@@ -2,7 +2,7 @@ import XCTest
 import Shared
 @testable import TasksApp
 
-/// Smoke tests: the shared Kotlin ViewModels (step 4) are usable from Swift via SKIE,
+/// Smoke tests: the shared Kotlin ViewModels are usable from Swift via SKIE,
 /// and the Swift `SharedViewModel` wrapper mirrors `uiState` and clears the VM on deinit.
 /// ViewModel behaviour itself is tested once, in shared/src/commonTest.
 @MainActor

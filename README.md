@@ -1,227 +1,140 @@
-# Tasks — iOS
+# KMPBrownfield-ios
 
-Native SwiftUI implementation of the Tasks app described in `../SPEC.md`.
-This is a Kotlin Multiplatform brownfield practice. Step 1: the Swift `Domain/` layer was
-replaced by the KMP library in `../shared`. Step 2: the Swift `Data/` layer (URLSession API,
-Codable DTO, repository) was replaced too — see "Shared (KMP) integration". Step 3: SKIE.
-Step 4: the screen ViewModels come from `shared` too; Swift keeps only SwiftUI views and thin
-wrappers — see "Shared ViewModels (step 4)". Step 5: UI-only SwiftUI views over per-screen Swift
-view models — see "Screen models (step 5)". An Android twin lives in `../android-app` and follows the same spec.
+SwiftUI Tasks app on top of a **Kotlin Multiplatform** core. The domain, data and presentation
+(ViewModel) layers come from [KMPBrownfield-shared](https://github.com/Kaktotaks/KMPBrownfield-shared)
+as a prebuilt XCFramework via Swift Package Manager; this app keeps SwiftUI views, navigation and a
+thin Swift presentation layer. It is the iOS half of a brownfield KMP migration — the Android twin
+is [KMPBrownfield-android](https://github.com/Kaktotaks/KMPBrownfield-android), and both follow the
+same [product spec](https://github.com/Kaktotaks/KMPBrownfield-shared/blob/main/docs/SPEC.md).
 
-- iOS 17.0+, Swift 5 mode, SwiftUI app lifecycle, no third-party Swift dependencies
-- Domain + Data + ViewModels from Kotlin: `Shared.framework` built from `../shared` on every Xcode build
-- Combine `ObservableObject` (`@Published`, `@StateObject` / `@ObservedObject`) for the view models and the generic `SharedViewModel` bridge
-- Data: `GET https://jsonplaceholder.typicode.com/todos?_limit=20`, loaded once on launch,
-  then all changes live in memory
+How the app got here: [`docs/MIGRATION.md`](docs/MIGRATION.md) (brownfield migration log).
 
-## Structure
+- iOS 17.0+, SwiftUI app lifecycle, Swift 5 language mode
+- One dependency: the `Shared` package (`https://github.com/Kaktotaks/KMPBrownfield-shared`,
+  *Up to Next Minor* from `0.5.0`; `Package.resolved` is committed). No Gradle or JDK in the iOS build.
+- Combine `ObservableObject` for the Swift ViewModels and the generic `SharedViewModel` bridge
+- Data: `GET https://jsonplaceholder.typicode.com/todos?_limit=20`, loaded once on launch; afterwards
+  all changes live in memory
+
+## Build and run
+
+1. Open `TasksApp.xcodeproj` in **Xcode 16 or newer** (the project uses objectVersion 77).
+   Xcode resolves the `Shared` package and downloads `Shared.xcframework.zip` from the GitHub Release.
+2. Pick an iOS 17+ simulator, then **Cmd+R** to run, **Cmd+U** to run the tests.
+
+For a physical device, select your team under Signing & Capabilities (the development team is empty).
+
+## Architecture
 
 ```
-TasksApp.xcodeproj           Xcode project (folder-synchronized groups) + shared scheme
+SwiftUI View (body only)            TaskListScreen, TaskDetailScreen, TaskEditorScreen, StatsScreen
+   │  @StateObject (tab roots) / @ObservedObject (passed in)
+   ▼
+Swift ViewModel (@MainActor,        TaskListViewModel, TaskDetailViewModel,
+ ObservableObject)                  TaskEditorViewModel, StatsViewModel
+   │  display-ready state, Bindings, intents, Date ↔ LocalDate, child ViewModel creation
+   ▼
+SharedViewModel<VM, UiState>        generic bridge: mirrors Kotlin `uiState` (for await) into
+   │                                @Published `state`, `send {}`, `clear()` on deinit
+   ▼
+Kotlin ViewModel (Shared)           TaskListViewModel, … — presentation logic shared with Android
+   ▼
+Kotlin data + domain (Shared)       TaskRepository (StateFlow<LoadState>), TaskValidator, TaskFilter, …
+```
+
+```
 TasksApp/
   App/                       TasksMainApp (@main), RootView (TabView: Tasks, Stats),
-                             AppDependencies (repository, validator, load on start,
-                             Kotlin VM + view model factories)
-  Shared+Interop.swift       typealiases + Date <-> LocalDate helpers for the Kotlin framework
-  UI/SharedViewModel.swift   generic ObservableObject bridge around a Kotlin ViewModel (observe + clear)
-  UI/TaskList/               TaskListViewModel, TaskRowItem, list screen (+ small subviews), row
-  UI/TaskDetail/             TaskDetailViewModel, detail screen
-  UI/TaskEditor/             TaskEditorViewModel, editor sheet
-  UI/Stats/                  StatsViewModel (+ StatsSummary), stats screen
-  UI/Components/             PriorityBadge, Priority+UI (badge color), DueDateLine,
-                             loading/error views, SegmentedPicker, PickerOption
-  Assets.xcassets
-TasksAppTests/               XCTest smoke tests for the Kotlin interop (SharedInteropTests,
-                             SharedDataInteropTests with a Swift fake of the Kotlin TaskApi,
-                             SharedViewModelInteropTests) + ViewModelTests (mapping, bindings)
+                             AppDependencies (composition root: repository, validator, load on start,
+                             Kotlin VM + Swift ViewModel factories)
+  Shared+Interop.swift       typealiases (LocalDate, SortOrder) + Date <-> LocalDate helpers
+  UI/SharedViewModel.swift   generic ObservableObject bridge around a Kotlin ViewModel
+  UI/TaskList/               TaskListViewModel, TaskRowItem, TaskListScreen (+ small subviews), TaskRow
+  UI/TaskDetail/             TaskDetailViewModel, TaskDetailScreen
+  UI/TaskEditor/             TaskEditorViewModel, TaskEditorScreen (sheet)
+  UI/Stats/                  StatsViewModel (+ StatsSummary), StatsScreen
+  UI/Components/             PriorityBadge, Priority+UI, DueDateLine, load/error views,
+                             SegmentedPicker, PickerOption
+TasksAppTests/               XCTest (10 tests)
 ```
 
-Layers:
-- **Domain** — Kotlin, from `../shared` (`import Shared`): `TaskItem`, `Priority`,
-  `TaskValidator`, `ValidationError`, `TaskFilter` (+ `StatusFilter`, `SortOrder`),
-  `StatsCalculator`, `TaskStats`, `DateProvider`/`SystemDateProvider`, `DateFormatting`,
-  `TodoMapper`. Its unit tests live in `shared/src/commonTest`.
-- **Data** — Kotlin, from `../shared` (`...shared.data`): `TaskApi` (interface, fakeable from
-  Swift) / `KtorTaskApi`, `TaskRepository` (single in-memory source of truth, `StateFlow<LoadState>`).
-  Swift owns one instance in `AppDependencies`.
-- **Presentation** — Kotlin, from `../shared` (`...shared.presentation`): `TaskListViewModel`,
-  `TaskDetailViewModel`, `TaskEditorViewModel`, `StatsViewModel` (androidx `ViewModel`, `StateFlow` uiState).
-- **UI** — Swift: one folder per screen; each SwiftUI screen holds a Swift view model that owns
-  its Kotlin ViewModel through a `SharedViewModel` bridge, all created by `AppDependencies`.
-
-## Shared (KMP) integration
-
-Step 6 — **Swift Package Manager, binary XCFramework** (no Gradle / JDK in the iOS build):
-
-- Package: `https://github.com/Kaktotaks/KMPBrownfield-shared`, product `Shared`,
-  rule *Up to Next Minor* from `0.5.0` (`Package.resolved` pins the exact version — commit it).
-- The package's `Package.swift` is a single `binaryTarget(url:checksum:)` pointing at
-  `Shared.xcframework.zip` in the GitHub Release. CI (`shared/.github/workflows/release.yml`) builds it,
-  so Xcode only downloads and links a **static** framework; Swift code does `import Shared`.
-- Updating shared = bump the package version (File → Packages → Update to Latest Package Versions) in its own PR.
-- SKIE builds the framework with Swift library evolution, so the zip works with a different Xcode version than CI's.
-
-Local development (changing `shared` and the app together):
-1. `cd ../shared && ./gradlew assembleSharedDebugXCFramework`
-2. Xcode: remove the remote package from the project → *Add Package Dependencies… → Add Local…* → `../shared`.
-   Its `Package.swift` uses `build/XCFrameworks/debug/Shared.xcframework` when it exists.
-3. After Kotlin changes re-run step 1; after switching modes use File → Packages → Reset Package Caches.
-4. Do not commit the local package reference.
-
-Previously (steps 1–5) the target had a "Compile Kotlin Framework" Run Script calling
-`./gradlew :embedAndSignAppleFrameworkForXcode` (direct integration: JDK required, `ENABLE_USER_SCRIPT_SANDBOXING = NO`).
-It was removed; script sandboxing is back to `YES`.
-
-Swift-side notes:
-- Kotlin `Task` is exported as **`TaskItem`** (`@ObjCName(swiftName = "TaskItem")`), because
-  `Task` would clash with Swift Concurrency's `Task` ("'Task' is ambiguous"). So the app uses
-  plain `Task { }` for concurrency again.
-- Kotlin `Int` is `Int32` in Swift (ids, stats); Kotlin enums are classes (switch needs `default`,
-  no `allCases`); `object`s are reached via `.shared`; default arguments are not exported.
-- kotlinx-datetime `LocalDate` arrives as `Kotlinx_datetimeLocalDate`; `Shared+Interop.swift`
-  aliases it to `LocalDate` and converts to/from `Date` via Kotlin `IosDates`. Foundation's
-  `SortOrder` is shadowed there by `typealias SortOrder = Shared.SortOrder`.
-
-### Data layer (step 2)
-
-- Networking is Ktor in `commonMain`; on iOS it runs on the **Darwin engine** (NSURLSession under
-  the hood), JSON via kotlinx.serialization. `TodoDto` is `internal` in Kotlin — Swift only sees
-  `TaskItem`. The app builds `TaskRepository(api: KtorTaskApi(), dateProvider: SystemDateProvider.shared)`.
-- **`TaskStore`** (`Data/TaskStore.swift`, removed in step 4) existed because SwiftUI can't observe a Kotlin `StateFlow`
-  (and without SKIE its generic is erased: `value: Any?`). It subscribes via the iosMain extension
-  `repository.watchState { state in ... }` (callback on the main thread, returns a `WatchHandle`
-  cancelled in `deinit`) and mirrors the state into `@Observable` `phase` + `tasks`. Mutations
-  (`add/update/toggleDone/delete`) are forwarded to Kotlin; the UI updates through the callback.
-- Raw interop limitations (no SKIE):
-  - `sealed interface LoadState` → protocol + classes `LoadStateLoading`/`LoadStateError`
-    (`.shared`) and `LoadStateLoaded` (`.tasks`); no exhaustive `switch`, so `TaskStore` maps it
-    with `is`/`as?` to the Swift `enum Phase`.
-  - `suspend fun load()` → `load(completionHandler:)` + an `async` overload. Kotlin/Native by
-    default requires suspend calls to *start* on the main thread, while imported `async` methods
-    are nonisolated and may hop off the main actor, so `TaskStore.load()` calls the
-    completion-handler form inside `withCheckedContinuation` (runs on the calling MainActor).
-  - A Swift class can implement the Kotlin `TaskApi` (ObjC protocol, `NSObject` subclass):
-    `fetchTasks(today:completionHandler:)` — see `FakeTaskApi` in the tests.
-
-### SKIE (step 3)
-
-`shared` now applies the SKIE plugin, which generates Swift wrappers into `Shared.framework`.
-What changed on the Swift side (the "raw interop" notes above are kept for comparison):
-
-| Before (step 2, raw ObjC) | After (step 3, SKIE) |
-|---|---|
-| `watchState { }` callback bridge in iosMain + `WatchHandle` | `for await state in repository.state` (typed `AsyncSequence`) |
-| `state.value` was `Any?`, so `currentState` helper | `repository.state.value` is typed |
-| `is`/`as?` checks on `LoadStateLoaded` / `LoadStateError` | `switch onEnum(of: state)` — exhaustive |
-| `load(completionHandler:)` in `withCheckedContinuation` (main-thread start) | `try await repository.load()` from any thread, cancellation propagates |
-| Kotlin enums are classes → `switch` needs `default` | real Swift enums → exhaustive `switch` (`PriorityBadge`) |
-
-## Shared ViewModels (step 4)
-
-The original hand-written Swift ViewModels and the `TaskStore` adapter were removed. Filtering
-(`TaskFilter`), stats (`StatsCalculator`), live validation (`TaskValidator`), saving and the
-loading/error/retry states now live in the Kotlin ViewModels in `shared/.../presentation` — the
-same classes the Android app uses.
-
-**`SharedViewModel<VM, UiState>`** (`UI/SharedViewModel.swift`) is the only Swift glue, one
-generic class for all four screens (`TaskListModel`, `TaskDetailModel`, `TaskEditorModel`,
-`StatsModel` typealiases). It:
-- **observes `uiState`**: starts `Task { for await s in vm.uiState { state = s } }` in `init`
-  (initial value from `vm.uiState.value`), mirroring it into a `@Published state` SwiftUI can
-  track. The loop must keep running: Kotlin uses `stateIn(WhileSubscribed)`, so `uiState` only
-  updates while collected;
+### SharedViewModel — the Kotlin ↔ SwiftUI bridge
+`SharedViewModel<VM, UiState>` (`UI/SharedViewModel.swift`) is the only generic glue, with one
+typealias per screen (`TaskListModel`, `TaskDetailModel`, `TaskEditorModel`, `StatsModel`). It:
+- **observes `uiState`** with `for await` (SKIE turns `StateFlow` into a typed `AsyncSequence`) and
+  mirrors it into `@Published state`. The loop must keep running: Kotlin uses
+  `stateIn(WhileSubscribed)`, so `uiState` only updates while collected;
 - **destroys the Kotlin VM**: iOS has no `ViewModelStoreOwner`, so `deinit` cancels the loop and
-  calls `viewModel.clear()` (iosMain extension → cancels `viewModelScope`). Without it the VMs and
-  their subscriptions to `repository.state` would leak;
-- **forwards events**: `model.send { $0.onToggle(id: id) }` calls the Kotlin VM and re-reads
-  `uiState.value` synchronously (keeps text fields bound to the editor's `MutableStateFlow` smooth).
+  calls `viewModel.clear()` (iosMain extension → cancels `viewModelScope`);
+- **forwards events**: `shared.send { $0.onToggle(id: id) }` calls the Kotlin VM and re-reads
+  `uiState.value` synchronously, so text fields bound to the editor's `MutableStateFlow` don't lag;
+- **builds Bindings**: `shared.binding(\.title) { $0.onTitleChange(value: $1) }` reads from Kotlin
+  state and writes Kotlin events (plus a variant with a conversion, e.g. `LocalDate` ↔ `Date`).
 
-`AppDependencies` (`App/`) owns one `TaskRepository` + `TaskValidator(dateProvider:)`, loads tasks
-once on start (`RootView.task`) and has a factory per Kotlin VM. Tab screens own their
-model via `@StateObject` (autoclosure → created once); the detail and editor models are created by
-the presenting ViewModel (`detail` / `newTaskEditor` / `editor`) and observed with `@ObservedObject`;
-the editor model is created when the sheet opens
-(`sheet(item:)`), so there is exactly one Kotlin `TaskEditorViewModel` per presentation, cleared
-when the sheet closes. New task → `TaskEditorViewModel.companion.NEW_TASK_ID`.
-
-What stays native (Swift): SwiftUI views, navigation (`NavigationStack`, `navigationDestination`,
-sheets, `dismiss`), confirmation dialog, and the view models below.
-
-## Screen ViewModels (step 5)
-
-SwiftUI views are **UI only**: just `body` — no private funcs/computed sub-views, no computed
-`Binding`s, no `switch onEnum`, no mapping/formatting, no closures that talk to the Kotlin VM.
-Everything else moved into a per-screen Swift **view model** ("local ViewModel", SwiftUI-style).
-
-```
-SwiftUI View (UI only)              TaskListScreen, TaskDetailScreen, TaskEditorScreen, StatsScreen
-   │  @StateObject (owns) / @ObservedObject (passed in), $model.x
-   ▼
-ViewModel (Swift, @MainActor      TaskListViewModel, TaskDetailViewModel,
- ObservableObject)                  TaskEditorViewModel, StatsViewModel
-   │  platform presentation: display-ready state, bindings, formatting,
-   │  Date ↔ LocalDate, picker options, navigation/sheet factories
-   ▼
-SharedViewModel<VM, UiState>        generic bridge: mirrors `uiState` (for await), `send {}`,
-   │                                `clear()` on deinit
-   ▼
-Kotlin ViewModel (shared)           business/presentation logic shared with Android
-```
-
-Each view model exposes:
+### Screen ViewModels
+SwiftUI views are **UI only** — just `body`; no mapping, formatting or calls into Kotlin. Each
+per-screen Swift ViewModel exposes:
 - **display-ready state** — e.g. `TaskListViewModel.content`
-  (`.loading / .error / .empty / .loaded([TaskRowItem])`, mapped from the Kotlin sealed type via
-  `onEnum` here), `TaskRowItem` (`dueText` "Due 29 Oct 2026" via shared `DateFormatting`,
-  `isOverdue`, `toggleTitle` "Mark as done"/"Mark as active"), `TaskDetailViewModel.details`
-  ("Done"/"Active", notes or `nil` → "No notes"), editor `screenTitle` / `canSave` /
-  `errorMessages`, `StatsSummary` rows;
-- **bindable properties** — computed properties whose setter sends the Kotlin event, so views
-  write `$model.status`, `$model.sort`, `$model.query`, `$model.title`, `$model.notes`,
-  `$model.priority`, `$model.dueDate` (a Swift `Date`; `LocalDate` conversion lives in the model).
-  The editor's setters go through `send`, which re-reads the `MutableStateFlow` synchronously, so
-  text fields don't lag. The search text is stored in the list model and forwarded to Kotlin on
-  set (the list's `uiState` is `stateIn`, i.e. asynchronous);
+  (`.loading / .error / .empty / .loaded([TaskRowItem])`, mapped from the Kotlin sealed type with
+  `onEnum`), `TaskDetailViewModel.details`, the editor's `screenTitle` / `canSave` / `errorMessages`,
+  `StatsSummary` rows;
+- **bindings** — `Binding` properties such as `model.status`, `model.sort`, `model.query`,
+  `model.title`, `model.dueDate`, passed straight to controls:
+  `TextField("Title", text: model.title)` (no `$`). The search text is kept in the list ViewModel
+  and forwarded to Kotlin, because the list's `uiState` updates asynchronously;
 - **intents** — `retry()`, `toggle(id:)`, `toggleDone()`, `delete()`, `save() -> Bool`,
-  `showNewTaskEditor()` / `showEditor()` (set the `sheet(item:)` model → one Kotlin editor VM per
-  presentation), `makeDetail(taskId:)` for `navigationDestination`; picker option lists
-  (`statusOptions`, `sortOptions`, `priorityOptions` — Kotlin enums are not `CaseIterable`).
+  `openDetail(id:)`, `showNewTaskEditor()` / `showEditor()`, plus picker option lists (Kotlin enums
+  are Swift enums with SKIE, but not `CaseIterable`).
 
-Views only branch on the display state and compose small View structs (`StatusFilterBar`,
-`SortMenu`, `TaskRowsList`, `TaskDetailContent`, `StatsSummaryList`, `SegmentedPicker`). View-local
-presentational state stays in the view (`@State isConfirmingDelete`, `@Environment(\.dismiss)`),
-and inline closures call a single intent (`{ model.retry() }`, `{ if model.save() { dismiss() } }`).
-`PriorityBadge`'s color comes from `Priority.badgeColor` (`UI/Components/Priority+UI.swift`).
-`AppDependencies` builds view models (`makeTaskListViewModel()` …) and passes itself to the
-ones that create child models (list → detail/editor, detail → editor).
+Ownership: tab roots hold their ViewModel in `@StateObject` (an autoclosure, so the ViewModel and its
+Kotlin VM are created once); child ViewModels are created by the presenting ViewModel —
+`detail` for `navigationDestination(item:)` and `newTaskEditor` / `editor` for `sheet(item:)` — and
+observed with `@ObservedObject`. So there is exactly one Kotlin ViewModel per presentation, cleared
+when it is dismissed. Each Swift ViewModel forwards its `SharedViewModel`'s `objectWillChange`
+(nested `ObservableObject`s don't propagate changes on their own).
 
-### Bindings to Kotlin state
-Two-way fields are `Binding`s built by one generic helper on the bridge,
-`SharedViewModel.binding(\.field) { vm, value in vm.onFieldChange(value: value) }` (plus a variant
-with a conversion, e.g. `LocalDate` ↔ `Date`). Each ViewModel property is a one-liner, e.g.
-`var title: Binding<String> { shared.binding(\.title) { $0.onTitleChange(value: $1) } }`, and views
-pass it straight through: `TextField("Title", text: model.title)` (no `$` needed).
-Reads come from the Kotlin `uiState` (single source of truth); writes are Kotlin events.
+Why `ObservableObject` rather than `@Observable`: it works on any iOS version a brownfield team is
+likely to support. The trade-offs (whole-object invalidation, manual forwarding of nested objects)
+are handled as described above.
 
-### Why ObservableObject (not `@Observable`)
-Combine-based `ObservableObject` works on any iOS version the team supports, so it's the usual
-choice in brownfield apps. Points to remember (vs Observation on iOS 17+):
-- **Nested ObservableObject**: each Swift ViewModel holds a `SharedViewModel` (itself an
-  ObservableObject). Its changes don't reach SwiftUI automatically, so every ViewModel forwards
-  `shared.objectWillChange` into its own `objectWillChange`.
-- **Whole-object invalidation**: any `@Published` change re-renders every view observing the object
-  (Observation tracks per property). Sub-views therefore take the model as `@ObservedObject`;
-  a plain `let` reference would not refresh them.
-- **Ownership**: `@StateObject(wrappedValue:)` is an autoclosure, so the ViewModel (and its Kotlin VM)
-  is created once per screen lifetime; `@ObservedObject` for objects owned elsewhere.
+### Swift-side interop notes
+- Kotlin `Task` is exported as **`TaskItem`** (it would clash with Swift Concurrency's `Task`), so the
+  app uses plain `Task { }` for concurrency.
+- Kotlin `Int` is `Int32` in Swift (ids, stats); `object`s are reached via `.shared`; default
+  arguments are not exported.
+- With SKIE, Kotlin enums are real Swift enums (exhaustive `switch`, no `default` needed — see
+  `Priority+UI.swift`), sealed types are switched with `onEnum(of:)`, `suspend` functions are
+  `async`, and `StateFlow`s are typed `AsyncSequence`s.
+- kotlinx-datetime `LocalDate` arrives as `Kotlinx_datetimeLocalDate`; `Shared+Interop.swift` aliases
+  it to `LocalDate` and converts to/from `Date` via Kotlin `IosDates`. Foundation's `SortOrder` is
+  shadowed by `typealias SortOrder = Shared.SortOrder`.
+- Implementing a Kotlin `suspend` interface in Swift means implementing SKIE's `__`-prefixed
+  requirement — see `FakeTaskApi` in the tests.
 
-## Run
+## Tests
+`TasksAppTests` (XCTest, 10 tests, Cmd+U):
+- `SharedInteropTests` — Kotlin domain from Swift (`TodoMapper`, `IosDates`, `DateFormatting`);
+- `SharedDataInteropTests` — `TaskRepository` with a Swift fake of the Kotlin `TaskApi`;
+- `SharedViewModelInteropTests` — Kotlin ViewModels from Swift, `SharedViewModel` mirroring and release;
+- `ViewModelTests` — Swift ViewModel mapping, bindings and save.
 
-1. Open `TasksApp.xcodeproj` in Xcode (16 or newer — the project uses objectVersion 77).
-2. Pick an iOS 17+ simulator.
-3. Cmd+R to run, Cmd+U to run the unit tests.
+The test target links `Shared` only through the host app (`TEST_HOST`), so there is a single Kotlin
+runtime in the process. Business logic itself is tested once, in shared's `commonTest`.
 
-For a physical device, select your team under Signing & Capabilities (development team is empty).
+## Updating shared / local development
+- Updating = bump the package version (File → Packages → Update to Latest Package Versions) in its
+  own PR; `Package.resolved` pins the exact version.
+- Changing `shared` and the app together: clone
+  [KMPBrownfield-shared](https://github.com/Kaktotaks/KMPBrownfield-shared) next to this repo as
+  `../shared`, run `./gradlew assembleSharedDebugXCFramework` there, then in Xcode replace the remote
+  package with *Add Package Dependencies… → Add Local…* → `../shared` (its `Package.swift` uses the
+  debug XCFramework when it exists). After switching, use File → Packages → Reset Package Caches.
+  Do not commit the local package reference.
 
-## Next KMP steps
+## AI-assisted workflow
+Developed with Claude Code as a pair programmer (commits carry `Co-Authored-By` trailers). The shared
+library additionally has an automated Claude PR reviewer focused on the Swift API of the KMP surface —
+see [AI-assisted workflow](https://github.com/Kaktotaks/KMPBrownfield-shared#ai-assisted-workflow).
 
-Done: `shared` ships as an XCFramework via SPM (step 6).
+## License
+[MIT](LICENSE) © 2026 Leonid Shevchenko
