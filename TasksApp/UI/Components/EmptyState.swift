@@ -24,7 +24,9 @@ struct EmptyState<Action: View>: View {
                 .tkStyle(.body)
                 .foregroundStyle(Color.tk.textSecondary)
                 .multilineTextAlignment(.center)
+            // Content-width button (like Android), not stretched to the screen.
             action()
+                .fixedSize(horizontal: true, vertical: false)
                 .padding(.top, 12)
         }
         .padding(.horizontal, 32)
