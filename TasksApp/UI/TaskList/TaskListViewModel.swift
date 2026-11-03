@@ -13,16 +13,23 @@ final class TaskListViewModel: ObservableObject {
     enum Content {
         case loading
         case error
-        /// Loaded, but nothing matches the query/filter → "No tasks".
-        case empty
+        /// Loaded, nothing to show. `hasActiveFilter` picks "No matching tasks" over "No tasks yet"
+        /// (shared exposes no "total", so: loaded + empty + no query + filter All = nothing at all).
+        case empty(hasActiveFilter: Bool)
         case loaded([TaskRowItem])
     }
 
     /// Kotlin enums with SKIE are Swift enums, but not `CaseIterable`: the segment/menu order is listed here.
-    let statusOptions: [PickerOption<StatusFilter>] = [StatusFilter.all, .active, .done]
-        .map { PickerOption(value: $0, title: $0.displayName) }
-    let sortOptions: [PickerOption<SortOrder>] = [SortOrder.dueDate, .priority]
-        .map { PickerOption(value: $0, title: $0.displayName) }
+    let statusOptions: [PickerOption<StatusFilter>] = [
+        PickerOption(value: .all, title: L10n.string("filter_all")),
+        PickerOption(value: .active, title: L10n.string("filter_active")),
+        PickerOption(value: .done, title: L10n.string("filter_done")),
+    ]
+    let sortOptions: [PickerOption<SortOrder>] = [
+        PickerOption(value: .dueDate, title: L10n.string("sort_due")),
+        PickerOption(value: .priority, title: L10n.string("sort_priority")),
+        PickerOption(value: .title, title: L10n.string("sort_title")),
+    ]
 
     /// Created when the "New Task" sheet opens, released (→ Kotlin `clear()`) when it closes.
     @Published var newTaskEditor: TaskEditorViewModel?
@@ -58,7 +65,11 @@ final class TaskListViewModel: ObservableObject {
         case .loaded(let loaded):
             let today = state.today
             let rows = loaded.tasks.map { TaskRowItem(task: $0, today: today) }
-            return rows.isEmpty ? .empty : .loaded(rows)
+            if rows.isEmpty {
+                let hasActiveFilter = !state.query.trimmingCharacters(in: .whitespaces).isEmpty || state.status != .all
+                return .empty(hasActiveFilter: hasActiveFilter)
+            }
+            return .loaded(rows)
         }
     }
 
@@ -74,6 +85,11 @@ final class TaskListViewModel: ObservableObject {
                 self.shared.send { $0.onQueryChange(value: newValue) }
             }
         )
+    }
+
+    /// Label of the SortPill: the current sort.
+    var sortLabel: String {
+        sortOptions.first { $0.value == shared.state.sort }?.title ?? ""
     }
 
     var status: Binding<StatusFilter> { shared.binding(\.status) { $0.onStatusChange(value: $1) } }

@@ -12,6 +12,9 @@ final class TaskEditorViewModel: ObservableObject {
     let priorityOptions: [PickerOption<Priority>] = [Priority.low, .medium, .high]
         .map { PickerOption(value: $0, title: $0.displayName) }
 
+    /// Segment dot colors (`outline` for Low, like the Stats bars).
+    func dotColor(_ priority: Priority) -> Color { priority.barFill }
+
     private var forwarding: AnyCancellable?
     private let shared: TaskEditorModel
 
@@ -27,8 +30,18 @@ final class TaskEditorViewModel: ObservableObject {
     /// "New Task" / "Edit Task"
     var screenTitle: String { shared.state.screenTitle }
     var canSave: Bool { shared.state.canSave }
-    var errorMessages: [String] { shared.state.errors.map(\.message) }
-    var hasErrors: Bool { !shared.state.errors.isEmpty }
+
+    /// Validation messages (text from shared), mapped to the field they belong to.
+    var titleError: String? {
+        shared.state.errors.first { $0 == .titleTooShort || $0 == .titleTooLong }?.message
+    }
+    var notesError: String? { shared.state.errors.first { $0 == .notesTooLong }?.message }
+    var dueDateError: String? { shared.state.errors.first { $0 == .dueDateInPast }?.message }
+
+    /// Number of fields with an error: "Fix N fields to save this task."
+    var errorFieldCount: Int { [titleError, notesError, dueDateError].compactMap { $0 }.count }
+    var bannerText: String { L10n.plural("fix_fields", errorFieldCount) }
+    var dueDateText: String { DateFormatting.shared.format(date: shared.state.dueDate) }
 
     // MARK: - Bindings: read from Kotlin uiState, write as a Kotlin event (SharedViewModel.binding)
 

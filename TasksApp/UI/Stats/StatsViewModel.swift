@@ -40,39 +40,49 @@ final class StatsViewModel: ObservableObject {
 
 /// Display-ready stats.
 struct StatsSummary: Equatable {
-    /// "42%"
-    let completionText: String
-    /// 0...100 for `ProgressView(value:total: 100)`.
-    let completionValue: Double
-    /// Total / Done / Active / Overdue
-    let totals: [StatRow]
-    /// High / Medium / Low
-    let byPriority: [StatRow]
+    /// `completionPercent` from shared, untouched: the animation must land exactly on it.
+    let completionPercent: Int
+    let total: Int
+    let done: Int
+    let active: Int
+    let overdue: Int
+    /// High, Medium, Low.
+    let priorityRows: [PriorityRowItem]
 }
 
-struct StatRow: Identifiable, Equatable {
-    let title: String
-    let value: String
+/// One PriorityBar: `fraction` = count / total (0 when there are no tasks).
+struct PriorityRowItem: Identifiable, Equatable {
+    let priority: Priority
+    let count: Int
+    let fraction: Double
 
-    var id: String { title }
+    var id: Int { Int(priority.sortWeightValue) }
+}
+
+extension Priority {
+    /// Stable id for rows (`Priority` has no `Hashable` raw value in Swift).
+    fileprivate var sortWeightValue: Int32 {
+        switch self {
+        case .low: return 1
+        case .medium: return 2
+        case .high: return 3
+        }
+    }
 }
 
 extension StatsSummary {
     init(stats: TaskStats) {
+        let total = Int(stats.total)
+        func row(_ priority: Priority, _ count: Int32) -> PriorityRowItem {
+            PriorityRowItem(priority: priority, count: Int(count), fraction: total == 0 ? 0 : Double(count) / Double(total))
+        }
         self.init(
-            completionText: "\(stats.completionPercent)%",
-            completionValue: Double(stats.completionPercent),
-            totals: [
-                StatRow(title: "Total", value: "\(stats.total)"),
-                StatRow(title: "Done", value: "\(stats.done)"),
-                StatRow(title: "Active", value: "\(stats.active)"),
-                StatRow(title: "Overdue", value: "\(stats.overdue)"),
-            ],
-            byPriority: [
-                StatRow(title: "High", value: "\(stats.high)"),
-                StatRow(title: "Medium", value: "\(stats.medium)"),
-                StatRow(title: "Low", value: "\(stats.low)"),
-            ]
+            completionPercent: Int(stats.completionPercent),
+            total: total,
+            done: Int(stats.done),
+            active: Int(stats.active),
+            overdue: Int(stats.overdue),
+            priorityRows: [row(.high, stats.high), row(.medium, stats.medium), row(.low, stats.low)]
         )
     }
 }
