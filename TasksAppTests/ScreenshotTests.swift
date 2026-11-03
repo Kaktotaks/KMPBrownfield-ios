@@ -39,6 +39,11 @@ final class ScreenshotTests: XCTestCase {
     func testCaptureScreens() async throws {
         try XCTSkipUnless(outputDirectory != nil, "Set SCREENSHOT_DIR (TEST_RUNNER_SCREENSHOT_DIR) to generate screenshots.")
 
+        // The editor's date popover (graphical DatePicker) must not be squeezed.
+        try await snapshot("DatePopover") {
+            DatePopoverHost()
+        }
+
         for dark in [false, true] {
             let suffix = dark ? "-Dark" : ""
             let app = AppDependencies.preview()
@@ -49,6 +54,10 @@ final class ScreenshotTests: XCTestCase {
                 PreviewHost(app: app) { app in NavigationStack { TaskDetailScreen(model: app.makeTaskDetailViewModel(taskId: 5)) } }
             }
             try await snapshot("Stats\(suffix)", dark: dark) {
+                PreviewHost(app: app) { StatsScreen(model: $0.makeStatsViewModel()) }
+            }
+            // Early frame of the S1-S5 sweep (ring + percent from one value).
+            try await snapshot("Stats-Mid\(suffix)", dark: dark, settle: 0.12) {
                 PreviewHost(app: app) { StatsScreen(model: $0.makeStatsViewModel()) }
             }
             try await snapshot("Editor\(suffix)", dark: dark) {
@@ -71,5 +80,13 @@ final class ScreenshotTests: XCTestCase {
                 PreviewHost(app: .preview(), load: false) { TaskListScreen(model: $0.makeTaskListViewModel()) }
             }
         }
+    }
+}
+
+private struct DatePopoverHost: View {
+    @State private var date = Date()
+    var body: some View {
+        Color.tk.bg
+            .popover(isPresented: .constant(true)) { DueDatePickerPopover(selection: $date) }
     }
 }
