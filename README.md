@@ -11,10 +11,25 @@ How the app got here: [`docs/MIGRATION.md`](docs/MIGRATION.md) (brownfield migra
 
 - iOS 17.0+, SwiftUI app lifecycle, Swift 5 language mode
 - One dependency: the `Shared` package (`https://github.com/Kaktotaks/KMPBrownfield-shared`,
-  *Up to Next Minor* from `0.5.0`; `Package.resolved` is committed). No Gradle or JDK in the iOS build.
+  *Up to Next Minor* from `0.6.0`; `Package.resolved` is committed). No Gradle or JDK in the iOS build.
 - Combine `ObservableObject` for the Swift ViewModels and the generic `SharedViewModel` bridge
 - Data: `GET https://jsonplaceholder.typicode.com/todos?_limit=20`, loaded once on launch; afterwards
   all changes live in memory
+
+## Design
+
+The UI follows the approved redesign — [`docs/design/DESIGN_HANDOFF.md`](docs/design/DESIGN_HANDOFF.md) (tokens, components,
+screens, motion, copy, accessibility, acceptance criteria). It is a visual-layer change only: the shared module and its
+ViewModels are untouched, and both apps look and behave the same except the chrome listed in handoff §0. The sort pill's
+"Title" option comes from `SortOrder.TITLE` (shared 0.6.0).
+
+| List | List (dark) | Stats |
+|---|---|---|
+| ![List](docs/design/screenshots/ios-List.png) | ![List dark](docs/design/screenshots/ios-List-Dark.png) | ![Stats](docs/design/screenshots/ios-Stats.png) |
+
+More states (detail, editor with validation errors, error, empty) are in [`docs/design/screenshots`](docs/design/screenshots)
+next to the Android counterparts. Screenshots of the two apps differ in data only (the iOS ones use the fake-data preview
+graph, the Android ones the live JSONPlaceholder data).
 
 ## Build and run
 
@@ -44,18 +59,26 @@ Kotlin data + domain (Shared)       TaskRepository (StateFlow<LoadState>), TaskV
 
 ```
 TasksApp/
-  App/                       TasksMainApp (@main), RootView (TabView: Tasks, Stats),
+  App/                       TasksMainApp (@main), RootView (system TabView: Tasks, Stats),
                              AppDependencies (composition root: repository, validator, load on start,
                              Kotlin VM + Swift ViewModel factories)
+  Theme/                     Color+Tk (Color.tk.<token>), Font+Tk (TKTextStyle), Motion, Metrics (Radius/Spacing),
+                             L10n (lookup over Localizable.xcstrings), TKIconPaths (generated, shared with Android)
+  Assets.xcassets/           TK/*.colorset (Any/Dark tokens), AppIcon (any/dark/tinted), LaunchBackground
+  Fonts/                     Inter 400-700 + Inter Tight 800 (static TTFs, OFL.txt), listed in UIAppFonts
+  Localizable.xcstrings      copy, keys identical to Android strings.xml (plural-aware fix_fields / n_tasks)
   Shared+Interop.swift       typealiases (LocalDate, SortOrder) + Date <-> LocalDate helpers
   UI/SharedViewModel.swift   generic ObservableObject bridge around a Kotlin ViewModel
-  UI/TaskList/               TaskListViewModel, TaskRowItem, TaskListScreen (+ small subviews), TaskRow
+  UI/Components/             TaskCard, CheckCircle, PriorityBadge, StatusBadge, DueLine, PillSearchField,
+                             PillSegmentedControl, SortPill, FloatingAddButton, Primary/Secondary/DestructiveButton,
+                             SavePill, TasksTextField, DateField, ErrorBanner, HeroCard, InfoRowsCard, StatTile,
+                             CompletionRing, AnimatedCountText, PriorityBar, EmptyState, SkeletonRow, TKIcon
+  UI/TaskList/               TaskListViewModel, TaskRowItem, TaskListScreen
   UI/TaskDetail/             TaskDetailViewModel, TaskDetailScreen
   UI/TaskEditor/             TaskEditorViewModel, TaskEditorScreen (sheet)
-  UI/Stats/                  StatsViewModel (+ StatsSummary), StatsScreen
-  UI/Components/             PriorityBadge, Priority+UI, DueDateLine, load/error views,
-                             SegmentedPicker, PickerOption
-TasksAppTests/               XCTest (10 tests)
+  UI/Stats/                  StatsViewModel (+ StatsSummary), StatsScreen (S1-S5 animations)
+  UI/Preview/                fake-data AppDependencies.preview + #Previews (light + dark) for every screen
+TasksAppTests/               XCTest (15 tests + opt-in ScreenshotTests)
 ```
 
 ### SharedViewModel — the Kotlin ↔ SwiftUI bridge
@@ -112,11 +135,12 @@ are handled as described above.
   requirement — see `FakeTaskApi` in the tests.
 
 ## Tests
-`TasksAppTests` (XCTest, 10 tests, Cmd+U):
+`TasksAppTests` (XCTest, 15 tests, Cmd+U):
 - `SharedInteropTests` — Kotlin domain from Swift (`TodoMapper`, `IosDates`, `DateFormatting`);
 - `SharedDataInteropTests` — `TaskRepository` with a Swift fake of the Kotlin `TaskApi`;
 - `SharedViewModelInteropTests` — Kotlin ViewModels from Swift, `SharedViewModel` mirroring and release;
-- `ViewModelTests` — Swift ViewModel mapping, bindings and save.
+- `ViewModelTests` — Swift ViewModel mapping, bindings and save, empty states, stats fractions, localized copy.
+- `ScreenshotTests` — opt-in (`TEST_RUNNER_SCREENSHOT_DIR=… xcodebuild test -only-testing:TasksAppTests/ScreenshotTests`): renders the screens against the preview data into PNGs.
 
 The test target links `Shared` only through the host app (`TEST_HOST`), so there is a single Kotlin
 runtime in the process. Business logic itself is tested once, in shared's `commonTest`.
