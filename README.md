@@ -51,26 +51,26 @@ Layers:
 
 ## Shared (KMP) integration
 
-Direct integration (no CocoaPods / SPM): the `TasksApp` target has a first build phase
-**"Compile Kotlin Framework"** (before *Compile Sources*) that runs:
+Step 6 — **Swift Package Manager, binary XCFramework** (no Gradle / JDK in the iOS build):
 
-```sh
-if [ "YES" = "$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED" ]; then
-  echo "Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \"YES\""
-  exit 0
-fi
-cd "$SRCROOT/../shared"
-./gradlew :embedAndSignAppleFrameworkForXcode
-```
+- Package: `https://github.com/Kaktotaks/KMPBrownfield-shared`, product `Shared`,
+  rule *Up to Next Minor* from `0.5.0` (`Package.resolved` pins the exact version — commit it).
+- The package's `Package.swift` is a single `binaryTarget(url:checksum:)` pointing at
+  `Shared.xcframework.zip` in the GitHub Release. CI (`shared/.github/workflows/release.yml`) builds it,
+  so Xcode only downloads and links a **static** framework; Swift code does `import Shared`.
+- Updating shared = bump the package version (File → Packages → Update to Latest Package Versions) in its own PR.
+- SKIE builds the framework with Swift library evolution, so the zip works with a different Xcode version than CI's.
 
-Gradle builds `Shared.framework` (static) for the current SDK/arch/configuration and puts it
-where Xcode links it from, so the Swift code just does `import Shared`.
+Local development (changing `shared` and the app together):
+1. `cd ../shared && ./gradlew assembleSharedDebugXCFramework`
+2. Xcode: remove the remote package from the project → *Add Package Dependencies… → Add Local…* → `../shared`.
+   Its `Package.swift` uses `build/XCFrameworks/debug/Shared.xcframework` when it exists.
+3. After Kotlin changes re-run step 1; after switching modes use File → Packages → Reset Package Caches.
+4. Do not commit the local package reference.
 
-Requirements:
-- `../shared` must sit **next to** `ios-app` (the script uses `$SRCROOT/../shared`).
-- A **JDK 17+** must be installed on the machine (Gradle runs from the Xcode build).
-  The first build downloads Gradle/Kotlin/Native toolchains and takes a few minutes.
-- `ENABLE_USER_SCRIPT_SANDBOXING = NO` (project level): the script writes outside the sandbox.
+Previously (steps 1–5) the target had a "Compile Kotlin Framework" Run Script calling
+`./gradlew :embedAndSignAppleFrameworkForXcode` (direct integration: JDK required, `ENABLE_USER_SCRIPT_SANDBOXING = NO`).
+It was removed; script sandboxing is back to `YES`.
 
 Swift-side notes:
 - Kotlin `Task` is exported as **`TaskItem`** (`@ObjCName(swiftName = "TaskItem")`), because
@@ -224,4 +224,4 @@ For a physical device, select your team under Signing & Capabilities (developmen
 
 ## Next KMP steps
 
-Ship `shared` as an XCFramework via SPM instead of the Run Script.
+Done: `shared` ships as an XCFramework via SPM (step 6).

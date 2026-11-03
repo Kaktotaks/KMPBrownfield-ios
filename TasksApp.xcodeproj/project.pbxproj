@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		5A1B2C3D4E5F60718293A4B5 /* Shared in Frameworks */ = {isa = PBXBuildFile; productRef = 6B2C3D4E5F60718293A4B5C6 /* Shared */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8252CFD7CB120F084B57FA8A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -46,6 +50,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A1B2C3D4E5F60718293A4B5 /* Shared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,7 +82,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = CC03F9131F8AA23EC6174CE4 /* Build configuration list for PBXNativeTarget "TasksApp" */;
 			buildPhases = (
-				325B34518EC83D5827612AF4 /* Compile Kotlin Framework */,
 				2BA6ACE36A75F09BF0552EC8 /* Sources */,
 				7D76D30DA6715C25778090B6 /* Frameworks */,
 				7937C706824F5C20BC59AD32 /* Resources */,
@@ -91,6 +95,7 @@
 			);
 			name = TasksApp;
 			packageProductDependencies = (
+				6B2C3D4E5F60718293A4B5C6 /* Shared */,
 			);
 			productName = TasksApp;
 			productReference = 55F8FB420849DBEE2CAE684B /* TasksApp.app */;
@@ -147,6 +152,9 @@
 			);
 			mainGroup = 8C986364775DECD72AE47E09;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7C3D4E5F60718293A4B5C6D7 /* XCRemoteSwiftPackageReference "KMPBrownfield-shared" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 402C96BAC77603505D02022F /* Products */;
 			projectDirPath = "";
@@ -175,27 +183,6 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		325B34518EC83D5827612AF4 /* Compile Kotlin Framework */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Compile Kotlin Framework";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/../shared\"\n./gradlew :embedAndSignAppleFrameworkForXcode\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1D62B8C9F5CDC14B8C3D9150 /* Sources */ = {
@@ -298,7 +285,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -361,7 +348,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -471,6 +458,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7C3D4E5F60718293A4B5C6D7 /* XCRemoteSwiftPackageReference "KMPBrownfield-shared" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Kaktotaks/KMPBrownfield-shared";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6B2C3D4E5F60718293A4B5C6 /* Shared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7C3D4E5F60718293A4B5C6D7 /* XCRemoteSwiftPackageReference "KMPBrownfield-shared" */;
+			productName = Shared;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0E9FFA30D2E6EA0BBDEB0563 /* Project object */;
 }
