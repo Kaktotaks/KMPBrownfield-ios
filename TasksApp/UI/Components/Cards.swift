@@ -97,6 +97,8 @@ struct StatTile: View {
 }
 
 /// CompletionRing (§2): 104 x 104, radius 42, stroke 14, round caps; starts at 12 o'clock, runs clockwise.
+/// The arc is an `Animatable` shape that is ALWAYS in the tree (empty at 0), so the progress line sweeps
+/// 0 -> p with the animation instead of the view being inserted (which would only fade in).
 struct CompletionRing: View {
     /// 0...1, already animated.
     let progress: Double
@@ -104,15 +106,34 @@ struct CompletionRing: View {
     var body: some View {
         ZStack {
             Circle().stroke(Color.tk.ringTrack, lineWidth: 14)
-            if progress > 0 {
-                Circle()
-                    .trim(from: 0, to: min(max(progress, 0), 1))
-                    .stroke(Color.tk.accent, style: StrokeStyle(lineWidth: 14, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-            }
+            RingArc(progress: progress)
+                .stroke(Color.tk.accent, style: StrokeStyle(lineWidth: 14, lineCap: .round))
         }
         .frame(width: 84, height: 84)
         .frame(width: 104, height: 104)
+    }
+}
+
+/// Arc from 12 o'clock, clockwise, `progress` of a full turn. Empty path at 0 (no round-cap dot).
+private struct RingArc: Shape {
+    var progress: Double
+
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        guard progress > 0 else { return Path() }
+        var path = Path()
+        path.addArc(
+            center: CGPoint(x: rect.midX, y: rect.midY),
+            radius: min(rect.width, rect.height) / 2,
+            startAngle: .degrees(-90),
+            endAngle: .degrees(-90 + 360 * min(progress, 1)),
+            clockwise: false
+        )
+        return path
     }
 }
 

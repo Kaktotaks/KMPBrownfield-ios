@@ -38,12 +38,7 @@ struct TaskEditorScreen: View {
                         error: model.dueDateError
                     ) { isPickingDate = true }
                     .popover(isPresented: $isPickingDate) {
-                        DatePicker("due_date", selection: model.dueDate, displayedComponents: .date)
-                            .datePickerStyle(.graphical)
-                            .labelsHidden()
-                            .tint(Color.tk.textPrimary)
-                            .padding()
-                            .presentationCompactAdaptation(.popover)
+                        DueDatePickerPopover(selection: model.dueDate)
                     }
                 }
                 .tkAnimation(Motion.emphasized(Motion.medium), value: model.errorFieldCount)
@@ -88,5 +83,20 @@ struct TaskEditorScreen: View {
         .padding(.horizontal, Spacing.gutter)
         .padding(.top, 20)
         .frame(minHeight: 48)
+    }
+}
+
+/// System graphical `DatePicker` in a popover. Explicit size: left to itself a popover squeezes the picker.
+struct DueDatePickerPopover: View {
+    @Binding var selection: Date
+
+    var body: some View {
+        DatePicker("due_date", selection: $selection, displayedComponents: .date)
+            .datePickerStyle(.graphical)
+            .labelsHidden()
+            .tint(Color.tk.textPrimary)
+            .frame(width: 320, height: 340)
+            .padding(Spacing.s12)
+            .presentationCompactAdaptation(.popover)
     }
 }
