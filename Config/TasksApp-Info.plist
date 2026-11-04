@@ -11,6 +11,9 @@
 		<string>Inter-Bold.ttf</string>
 		<string>InterTight-ExtraBold.ttf</string>
 	</array>
+	<!-- Voice notes: shown by the system microphone dialog (after our own explainer card). -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record voice notes for your tasks.</string>
 	<!-- Launch screen background = token `bg` (Any/Dark), so dark mode doesn't flash white. -->
 	<key>UILaunchScreen</key>
 	<dict>
