@@ -11,10 +11,11 @@ How the app got here: [`docs/MIGRATION.md`](docs/MIGRATION.md) (brownfield migra
 
 - iOS 17.0+, SwiftUI app lifecycle, Swift 5 language mode
 - One dependency: the `Shared` package (`https://github.com/Kaktotaks/KMPBrownfield-shared`,
-  *Up to Next Minor* from `0.6.0`; `Package.resolved` is committed). No Gradle or JDK in the iOS build.
+  *Up to Next Minor*; `Package.resolved` is committed). No Gradle or JDK in the iOS build.
 - Combine `ObservableObject` for the Swift ViewModels and the generic `SharedViewModel` bridge
-- Data: `GET https://jsonplaceholder.typicode.com/todos?_limit=20`, loaded once on launch; afterwards
-  all changes live in memory
+- Data: `GET https://jsonplaceholder.typicode.com/todos?_limit=20` seeds the local SQLite database once
+  (shared 0.7.0, offline-first); afterwards tasks, edits and voice notes persist across restarts and the
+  app works offline
 
 ## Design
 
@@ -30,6 +31,40 @@ ViewModels are untouched, and both apps look and behave the same except the chro
 More states (detail, editor with validation errors, error, empty) are in [`docs/design/screenshots`](docs/design/screenshots)
 next to the Android counterparts. Screenshots of the two apps differ in data only (the iOS ones use the fake-data preview
 graph, the Android ones the live JSONPlaceholder data).
+
+## Voice notes (shared 0.7.0)
+
+A task can have **one optional voice note** (up to 2:00), recorded and played back in Task detail (card under
+Notes) and in the New / Edit task sheet (section under Due date); the list shows a mic + duration indicator.
+All recorder / player logic (state machine, timer, 2:00 limit, 1:50 warning, < 1 s discard, 40-bar waveform,
+speed, file lifecycle) is in `shared`; the app provides only thin native adapters and the UI
+(handoff: `docs/design/` and the voice-notes design handoff).
+
+- **Adapters** (`TasksApp/Voice/`): `AVVoiceRecorder` (AAC .m4a, mono, 44.1 kHz, 64 kbps, metering, dB -50...0 -> 0...1),
+  `AVVoicePlayer` (`AVAudioPlayer`, rate 1x / 1.5x / 2x), `AVMicPermission` (`AVAudioApplication`). Each voice-note
+  ViewModel gets its own recorder and player; only the permission provider is shared.
+- **Objective-C shim**: `VoicePlayerAdapter` implements the Kotlin `AudioPlayer` and forwards to the Swift
+  `VoicePlayerBackend`. Reason: `prepare(path): Long` is exported as `throws -> Int64` and Swift cannot implement such an
+  `@objc` requirement. The shim can be deleted if shared changes `prepare`.
+- **Permission**: `NSMicrophoneUsageDescription` = "Record voice notes for your tasks." (`Config/TasksApp-Info.plist`).
+  Our own explainer card shows first; after a denial the card offers "Open Settings"
+  (`UIApplication.openSettingsURLString`); granting it there works on return (`scenePhase` active -> `onAppForegrounded`).
+  Leaving the app (`scenePhase` inactive/background) or an audio interruption stops a recording (keeping the clip) or pauses playback.
+- **UI** (`TasksApp/UI/Voice/`): `VoiceNoteCard`, `VoiceRecorderView`, `VoicePlayerView`, `WaveformView`,
+  `MicPermissionCard`, `VoiceNoteIndicator`; Swift `VoiceNoteCardViewModel` (Combine `ObservableObject`) wraps the Kotlin
+  `VoiceNoteViewModel`; Replace / Delete use `.confirmationDialog`.
+- **Debug fakes** (DEBUG builds only, compiled out of Release): launch arguments for deterministic simulator runs
+  (same names as the Android intent extras):
+
+| Argument | Meaning |
+|---|---|
+| `-fakeVoiceAudio` | fake recorder (moving levels), player (wall clock) and permission, plus the sample tasks on a wiped database |
+| `-fakeMicPermission notDetermined\|granted\|denied` | initial permission (default `granted`) |
+| `-fakeMicDenyOnRequest` | the "system dialog" answers Don't Allow |
+| `-forceVoiceError recordFailed\|unavailable` | start throws / seeded notes cannot be played |
+| `-seedVoice "5:42000,4:18000"` | `taskId:durationMs` notes attached after the load |
+
+  e.g. `xcrun simctl launch booted com.example.tasks.ios -fakeVoiceAudio -fakeMicPermission notDetermined -seedVoice "5:42000"`
 
 ## Build and run
 
@@ -77,8 +112,10 @@ TasksApp/
   UI/TaskDetail/             TaskDetailViewModel, TaskDetailScreen
   UI/TaskEditor/             TaskEditorViewModel, TaskEditorScreen (sheet)
   UI/Stats/                  StatsViewModel (+ StatsSummary), StatsScreen (S1-S5 animations)
+  UI/Voice/                  VoiceNoteCard + recorder / player / permission views, VoiceNoteCardViewModel
+  Voice/                     native adapters (AVAudioRecorder / AVAudioPlayer / AVAudioApplication), DEBUG fakes
   UI/Preview/                fake-data AppDependencies.preview + #Previews (light + dark) for every screen
-TasksAppTests/               XCTest (15 tests + opt-in ScreenshotTests)
+TasksAppTests/               XCTest (26 tests + opt-in ScreenshotTests)
 ```
 
 ### SharedViewModel — the Kotlin ↔ SwiftUI bridge
@@ -135,9 +172,10 @@ are handled as described above.
   requirement — see `FakeTaskApi` in the tests.
 
 ## Tests
-`TasksAppTests` (XCTest, 15 tests, Cmd+U):
+`TasksAppTests` (XCTest, 26 tests, Cmd+U):
 - `SharedInteropTests` — Kotlin domain from Swift (`TodoMapper`, `IosDates`, `DateFormatting`);
-- `SharedDataInteropTests` — `TaskRepository` with a Swift fake of the Kotlin `TaskApi`;
+- `SharedDataInteropTests` — `TaskRepository` with a Swift fake of the Kotlin `TaskApi` (each test on a wiped SQLite database; state flows are awaited because they lag writes by one emission);
+- `VoiceNoteTests` — `VoiceNoteUiState` -> card model mapping, dB -> 0..1 level mapping, spoken durations, and a Swift `AudioRecorder` fake driving the Kotlin `VoiceNoteViewModel` (start / tick / stop with a fixed `MonotonicClock`);
 - `SharedViewModelInteropTests` — Kotlin ViewModels from Swift, `SharedViewModel` mirroring and release;
 - `ViewModelTests` — Swift ViewModel mapping, bindings and save, empty states, stats fractions, localized copy.
 - `ScreenshotTests` — opt-in (`TEST_RUNNER_SCREENSHOT_DIR=… xcodebuild test -only-testing:TasksAppTests/ScreenshotTests`): renders the screens against the preview data into PNGs.
