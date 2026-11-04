@@ -24,7 +24,7 @@ final class SharedViewModelInteropTests: XCTestCase {
         )
         // MutableStateFlow-backed: uiState.value is updated synchronously.
         XCTAssertTrue(vm.uiState.value.isNew)
-        XCTAssertEqual(vm.uiState.value.screenTitle, "New Task")
+        XCTAssertEqual(vm.uiState.value.screenTitle, "New task")
         XCTAssertFalse(vm.uiState.value.canSave) // empty title
 
         vm.onTitleChange(value: "Write tests")

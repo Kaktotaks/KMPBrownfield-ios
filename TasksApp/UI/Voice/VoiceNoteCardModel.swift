@@ -73,7 +73,7 @@ extension VoiceNoteCardModel {
             self = .recording(Recording(
                 timerText: VoiceNoteFormat.shared.duration(ms: recording.elapsedMs),
                 hintText: recording.isWarning
-                    ? L10n.format("voice_seconds_left", VoiceNoteFormat.shared.duration(ms: recording.remainingMs))
+                    ? L10n.format("voice_seconds_left", VoiceNoteFormat.shared.remaining(ms: recording.remainingMs))
                     : L10n.string("voice_max_hint"),
                 isWarning: recording.isWarning,
                 levels: recording.levels.map(\.floatValue),

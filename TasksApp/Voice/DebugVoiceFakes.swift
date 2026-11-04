@@ -10,7 +10,7 @@ import Shared
 //                                        task data (the handoff sample tasks, "today" = 2 Nov 2026) in an in-memory database
 //   -fakeMicPermission <state>           notDetermined | granted (default) | denied
 //   -fakeMicDenyOnRequest                the system dialog answers "Don't Allow" -> "Microphone access is off"
-//   -forceVoiceError <kind>              recordFailed: start throws -> "Couldn't record. Try again."
+//   -forceVoiceError <kind>              recordFailed: start throws -> "Couldn’t record. Try again."
 //                                        unavailable: seeded notes cannot be played -> "Voice note unavailable"
 //   -seedVoice "taskId:durationMs,..."   attaches a fake voice note (40 synthetic bars) to those tasks after the load
 //

@@ -61,7 +61,7 @@ final class ViewModelTests: XCTestCase {
         await app.loadIfNeeded()
         let editor = app.makeTaskEditorViewModel(taskId: nil)
 
-        XCTAssertEqual(editor.screenTitle, "New Task")
+        XCTAssertEqual(editor.screenTitle, "New task")
         XCTAssertFalse(editor.canSave)
         // Errors map to the field they belong to; the banner counts fields.
         XCTAssertEqual(editor.titleError, "Title must be at least 3 characters.")

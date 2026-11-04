@@ -33,7 +33,7 @@ final class TaskEditorViewModel: ObservableObject {
 
     // MARK: - Display state
 
-    /// "New Task" / "Edit Task"
+    /// "New task" / "Edit task"
     var screenTitle: String { shared.state.screenTitle }
     var canSave: Bool { shared.state.canSave }
 

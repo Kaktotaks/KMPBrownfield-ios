@@ -31,7 +31,7 @@ final class TaskListViewModel: ObservableObject {
         PickerOption(value: .title, title: L10n.string("sort_title")),
     ]
 
-    /// Created when the "New Task" sheet opens, released (→ Kotlin `clear()`) when it closes.
+    /// Created when the "New task" sheet opens, released (→ Kotlin `clear()`) when it closes.
     @Published var newTaskEditor: TaskEditorViewModel?
     /// Pushed detail screen. Created once on tap and released (→ Kotlin `clear()`) on pop.
     /// (A `navigationDestination(for:)` closure would build a new Kotlin VM on every re-render.)

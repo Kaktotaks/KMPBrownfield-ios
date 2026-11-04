@@ -34,6 +34,13 @@ final class VoiceNoteCardModelTests: XCTestCase {
         XCTAssertTrue(recording.isWarning)
     }
 
+    func testSecondsLeftRoundsUp() {
+        let levels = [KotlinFloat](repeating: KotlinFloat(float: 0), count: 32)
+        let state = VoiceNoteUiState.Recording(elapsedMs: 111_100, remainingMs: 8_900, isWarning: true, levels: levels)
+        guard case .recording(let recording) = VoiceNoteCardModel(state: state) else { return XCTFail("expected recording") }
+        XCTAssertEqual(recording.hintText, "0:09 left")
+    }
+
     func testReadyMapsPlayerTexts() {
         let state = VoiceNoteUiState.Ready(note: note(), positionMs: 12_900, isPlaying: true, speed: 1.5, progress: 0.3)
         guard case .player(let player) = VoiceNoteCardModel(state: state) else { return XCTFail("expected player") }
