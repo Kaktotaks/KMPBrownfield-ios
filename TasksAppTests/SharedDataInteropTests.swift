@@ -75,7 +75,7 @@ final class SharedDataInteropTests: XCTestCase {
 
         // SKIE: Kotlin suspend fun → Swift async. The seed is written before load() returns; `state` follows asynchronously.
         try await repository.load()
-        await waitUntil { repository.state.value is LoadStateLoaded }
+        await waitUntil { repository.state.value is LoadStateLoaded && repository.tasks.count == 2 }
 
         // SKIE: StateFlow.value is typed; sealed → exhaustive Swift enum via onEnum(of:).
         guard case .loaded(let loaded) = onEnum(of: repository.state.value) else {
