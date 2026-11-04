@@ -3,22 +3,22 @@ import Foundation
 import Shared
 
 // DEBUG-only deterministic voice audio, compiled out of Release. Lets the simulator (no microphone, no
-// system permission dialog) show every voice-note state on demand. Enabled by launch arguments:
+// system permission dialog) show every voice-note state on demand. Same names and meaning as the Android debug
+// intent extras; pass them as launch arguments (`-name value`, flags without a value):
 //
-//   -FakeVoiceAudio                      fake recorder / player / permission + fake task data (the handoff sample
-//                                        tasks, fixed "today" = 2 Nov 2026) on a freshly wiped database
-//   -FakeMicPermission <state>           notDetermined | granted (default) | denied
-//   -FakeMicRequestResult <result>       granted (default) | denied    what the system dialog "answers"
-//   -FakeRecordFailure                   recorder.start throws        -> "Couldn't record. Try again."
-//   -FakeVoiceUnavailable                seeded notes have no file    -> "Voice note unavailable"
-//   -FakeVoiceSeed <spec>                tasks that start with a note: "1:65000,4:18000,5:42000" (default; id:ms)
-//                                        or "none" (e.g. the empty Detail of task 5)
+//   -fakeVoiceAudio                      fake recorder (moving levels) / player (wall clock) / permission, plus fake
+//                                        task data (the handoff sample tasks, "today" = 2 Nov 2026) on a wiped database
+//   -fakeMicPermission <state>           notDetermined | granted (default) | denied
+//   -fakeMicDenyOnRequest                the system dialog answers "Don't Allow" -> "Microphone access is off"
+//   -forceVoiceError <kind>              recordFailed: start throws -> "Couldn't record. Try again."
+//                                        unavailable: seeded notes cannot be played -> "Voice note unavailable"
+//   -seedVoice "taskId:durationMs,..."   attaches a fake voice note (40 synthetic bars) to those tasks after the load
 //
-// Example: xcrun simctl launch booted <bundle id> -FakeVoiceAudio -FakeMicPermission notDetermined
+// Example: xcrun simctl launch booted com.example.tasks.ios -fakeVoiceAudio -fakeMicPermission notDetermined -seedVoice "5:42000"
 
 struct DebugLaunch {
     static let current: DebugLaunch? = {
-        ProcessInfo.processInfo.arguments.contains("-FakeVoiceAudio") ? DebugLaunch() : nil
+        ProcessInfo.processInfo.arguments.contains("-fakeVoiceAudio") ? DebugLaunch() : nil
     }()
 
     let micStatus: MicPermission
@@ -30,17 +30,17 @@ struct DebugLaunch {
 
     private init() {
         let defaults = UserDefaults.standard
-        switch defaults.string(forKey: "FakeMicPermission") {
+        switch defaults.string(forKey: "fakeMicPermission") {
         case "notDetermined": micStatus = .notDetermined
         case "denied": micStatus = .denied
         default: micStatus = .granted
         }
-        requestGranted = defaults.string(forKey: "FakeMicRequestResult") != "denied"
-        let flags = ProcessInfo.processInfo.arguments
-        failRecording = flags.contains("-FakeRecordFailure")
-        unavailable = flags.contains("-FakeVoiceUnavailable")
-        let spec = defaults.string(forKey: "FakeVoiceSeed") ?? "1:65000,4:18000,5:42000"
-        seed = spec == "none" ? [] : spec.split(separator: ",").compactMap { pair in
+        requestGranted = !ProcessInfo.processInfo.arguments.contains("-fakeMicDenyOnRequest")
+        let forced = defaults.string(forKey: "forceVoiceError")
+        failRecording = forced == "recordFailed"
+        unavailable = forced == "unavailable"
+        let spec = defaults.string(forKey: "seedVoice") ?? ""
+        seed = spec.split(separator: ",").compactMap { pair in
             let parts = pair.split(separator: ":")
             guard parts.count == 2, let id = Int32(parts[0]), let ms = Int64(parts[1]) else { return nil }
             return (id, ms)
@@ -81,6 +81,22 @@ struct DebugLaunch {
                 waveform: FakeVoiceRecorder.sampleWaveform.map { KotlinFloat(float: $0) }
             ))
         }
+    }
+}
+
+extension VoiceAudio {
+    /// Fake adapters for previews and tests.
+    static func fake(
+        permission: MicPermission = .granted,
+        requestGranted: Bool = true,
+        failRecording: Bool = false,
+        unavailable: Bool = false
+    ) -> VoiceAudio {
+        VoiceAudio(
+            makeRecorder: { FakeVoiceRecorder(failStart: failRecording) },
+            makePlayer: { makeAudioPlayer(FakeVoicePlayer(failPrepare: unavailable)) },
+            permission: FakeMicPermission(status: permission, requestResult: requestGranted)
+        )
     }
 }
 
