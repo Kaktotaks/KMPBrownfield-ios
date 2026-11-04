@@ -8,12 +8,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// The Kotlin-facing `AudioPlayer` (an Objective-C protocol, `SharedAudioPlayer`), implemented in Objective-C.
 ///
-/// Why this file exists: `AudioPlayer.prepare(path): Long` is exported as
-/// `- (int64_t)preparePath:error:` + `swift_error(nonnull_error)`, i.e. Swift sees `throws -> Int64`, and the Swift
-/// compiler refuses to let ANY Swift class implement an `@objc` requirement that `throws` and returns a non-object
-/// ("throwing method cannot be an implementation of an '@objc' requirement because it returns a value of type 'Int64'").
-/// So this thin class implements the Kotlin protocol and forwards everything to a Swift `VoicePlayerBackend`
-/// (AVAudioPlayer in the app, fakes in tests/previews). It can be deleted if shared changes `prepare` to return Unit/NSNumber.
+/// Why this file exists: Swift cannot implement `AudioPlayer` on an NSObject subclass. The protocol requirement
+/// `release()` (selector `release_`) collides with `NSObject.release` ("multiple matching functions named 'release()'",
+/// then "unavailable instance method 'release()' was used to satisfy a requirement"), and Swift protocol witnesses are
+/// matched by Swift name, not selector. A Swift class cannot be `@objc` without NSObject either. So this thin Objective-C
+/// class implements the Kotlin protocol and forwards to a Swift `VoicePlayerBackend` (AVAudioPlayer in the app, fakes in
+/// tests / previews). It can be deleted if shared renames `AudioPlayer.release()` (e.g. `dispose()`).
 @interface VoicePlayerAdapter : NSObject <SharedAudioPlayer>
 - (instancetype)initWithBackend:(id<VoicePlayerBackend>)backend NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;

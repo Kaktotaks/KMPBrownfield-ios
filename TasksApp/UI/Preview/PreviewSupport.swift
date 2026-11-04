@@ -46,9 +46,8 @@ extension AppDependencies {
         let tasks = tasks ?? previewTasks
         let provider = PreviewDateProvider()
         let api = PreviewTaskApi(result: fails ? .failure(PreviewError()) : .success(tasks))
-        // The shared repository is SQLite-backed: wipe the previous run's database so every preview starts seeded from `api`.
-        FakeStorage.wipe()
-        let repository = TasksIos.shared.createRepository(api: api, dateProvider: provider, logger: SharedLoggerCompanion.shared.NONE)
+        // In-memory SQLite (shared createInMemoryRepository): every preview starts seeded from `api`, tasks.db is untouched.
+        let repository = FakeStorage.makeRepository(api: api, dateProvider: provider)
         return AppDependencies(repository: repository, dateProvider: provider, voiceAudio: voiceAudio)
     }
 }

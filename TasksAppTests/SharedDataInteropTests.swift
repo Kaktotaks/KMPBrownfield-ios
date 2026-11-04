@@ -33,13 +33,10 @@ final class FixedDateProvider: NSObject, DateProvider {
     func today() -> LocalDate { date }
 }
 
-/// A repository over a FRESH database. Since 0.7.0 `TaskRepository` is SQLite-backed and Swift can only build it through
-/// `TasksIos.createRepository` (persistent `tasks.db`; no in-memory variant is exposed), so the database files are
-/// wiped first and every test starts "never seeded".
+/// A repository over a FRESH in-memory database (shared `TasksIos.createInMemoryRepository`), so every test starts "never seeded".
 @MainActor
 func makeTestRepository(api: any TaskApi, dateProvider: any DateProvider) -> TaskRepository {
-    FakeStorage.wipe()
-    return TasksIos.shared.createRepository(api: api, dateProvider: dateProvider, logger: SharedLoggerCompanion.shared.NONE)
+    FakeStorage.makeRepository(api: api, dateProvider: dateProvider)
 }
 
 /// Polls until `condition` holds (flows re-emit asynchronously on the repository scope). Fails the wait silently after

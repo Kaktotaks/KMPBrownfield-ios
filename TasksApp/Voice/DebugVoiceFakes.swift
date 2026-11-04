@@ -7,7 +7,7 @@ import Shared
 // intent extras; pass them as launch arguments (`-name value`, flags without a value):
 //
 //   -fakeVoiceAudio                      fake recorder (moving levels) / player (wall clock) / permission, plus fake
-//                                        task data (the handoff sample tasks, "today" = 2 Nov 2026) on a wiped database
+//                                        task data (the handoff sample tasks, "today" = 2 Nov 2026) in an in-memory database
 //   -fakeMicPermission <state>           notDetermined | granted (default) | denied
 //   -fakeMicDenyOnRequest                the system dialog answers "Don't Allow" -> "Microphone access is off"
 //   -forceVoiceError <kind>              recordFailed: start throws -> "Couldn't record. Try again."
@@ -57,14 +57,9 @@ struct DebugLaunch {
         )
     }
 
-    /// Fake API (sample tasks) on a wiped database.
+    /// Fake API (sample tasks) in an in-memory database.
     @MainActor func makeRepository() -> TaskRepository {
-        FakeStorage.wipe()
-        return TasksIos.shared.createRepository(
-            api: PreviewTaskApi(result: .success(AppDependencies.previewTasks)),
-            dateProvider: dateProvider,
-            logger: SharedLoggerCompanion.shared.NONE
-        )
+        FakeStorage.makeRepository(api: PreviewTaskApi(result: .success(AppDependencies.previewTasks)), dateProvider: dateProvider)
     }
 
     /// Gives the configured tasks a voice note whose "audio file" is a text file holding the duration.
@@ -100,25 +95,20 @@ extension VoiceAudio {
     }
 }
 
-/// Test / preview isolation: `TasksIos.createRepository` opens the persistent `tasks.db`. Shared offers no in-memory
-/// variant to Swift, so the database files (and stale voice files) are removed before a fresh repository is built.
+/// Test / preview isolation: a repository over an in-memory SQLite database (nothing touches `tasks.db`) with its own
+/// temporary voice directory, so every call starts "never seeded" and leaves no files in Application Support.
 enum FakeStorage {
-    static func wipe() {
-        let manager = FileManager.default
-        let roots = [manager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first,
-                     manager.urls(for: .documentDirectory, in: .userDomainMask).first,
-                     manager.urls(for: .libraryDirectory, in: .userDomainMask).first].compactMap { $0 }
-        for root in roots {
-            for directory in [root, root.appendingPathComponent("databases")] {
-                for suffix in ["", "-wal", "-shm", "-journal"] {
-                    try? manager.removeItem(at: directory.appendingPathComponent("tasks.db" + suffix))
-                }
-            }
-        }
-        let voice = URL(fileURLWithPath: TasksIos.shared.voiceNotesDirectory())
-        for file in (try? manager.contentsOfDirectory(at: voice, includingPropertiesForKeys: nil)) ?? [] {
-            try? manager.removeItem(at: file)
-        }
+    @MainActor
+    static func makeRepository(api: any TaskApi, dateProvider: any DateProvider) -> TaskRepository {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("voice-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return TasksIos.shared.createInMemoryRepository(
+            api: api,
+            dateProvider: dateProvider,
+            voiceDirectory: directory.path,
+            logger: SharedLoggerCompanion.shared.NONE
+        )
     }
 }
 

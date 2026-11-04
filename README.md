@@ -43,22 +43,22 @@ speed, file lifecycle) is in `shared`; the app provides only thin native adapter
 - **Adapters** (`TasksApp/Voice/`): `AVVoiceRecorder` (AAC .m4a, mono, 44.1 kHz, 64 kbps, metering, dB -50...0 -> 0...1),
   `AVVoicePlayer` (`AVAudioPlayer`, rate 1x / 1.5x / 2x), `AVMicPermission` (`AVAudioApplication`). Each voice-note
   ViewModel gets its own recorder and player; only the permission provider is shared.
-- **Objective-C shim**: `VoicePlayerAdapter` implements the Kotlin `AudioPlayer` and forwards to the Swift
-  `VoicePlayerBackend`. Reason: `prepare(path): Long` is exported as `throws -> Int64` and Swift cannot implement such an
-  `@objc` requirement. The shim can be deleted if shared changes `prepare`.
+- **Objective-C shim**: `VoicePlayerAdapter` implements the Kotlin `AudioPlayer` and forwards to the Swift `VoicePlayerBackend`.
+  Reason: Swift cannot conform an NSObject subclass to `AudioPlayer` because its `release()` collides with `NSObject.release`.
+  Deletable if shared renames `AudioPlayer.release()`.
 - **Permission**: `NSMicrophoneUsageDescription` = "Record voice notes for your tasks." (`Config/TasksApp-Info.plist`).
   Our own explainer card shows first; after a denial the card offers "Open Settings"
   (`UIApplication.openSettingsURLString`); granting it there works on return (`scenePhase` active -> `onAppForegrounded`).
   Leaving the app (`scenePhase` inactive/background) or an audio interruption stops a recording (keeping the clip) or pauses playback.
 - **UI** (`TasksApp/UI/Voice/`): `VoiceNoteCard`, `VoiceRecorderView`, `VoicePlayerView`, `WaveformView`,
   `MicPermissionCard`, `VoiceNoteIndicator`; Swift `VoiceNoteCardViewModel` (Combine `ObservableObject`) wraps the Kotlin
-  `VoiceNoteViewModel`; Replace / Delete use `.confirmationDialog`.
+  `VoiceNoteViewModel`; Replace / Delete use a system `.alert` (as in the reference screenshots).
 - **Debug fakes** (DEBUG builds only, compiled out of Release): launch arguments for deterministic simulator runs
   (same names as the Android intent extras):
 
 | Argument | Meaning |
 |---|---|
-| `-fakeVoiceAudio` | fake recorder (moving levels), player (wall clock) and permission, plus the sample tasks on a wiped database |
+| `-fakeVoiceAudio` | fake recorder (moving levels), player (wall clock) and permission, plus the sample tasks in an in-memory database |
 | `-fakeMicPermission notDetermined\|granted\|denied` | initial permission (default `granted`) |
 | `-fakeMicDenyOnRequest` | the "system dialog" answers Don't Allow |
 | `-forceVoiceError recordFailed\|unavailable` | start throws / seeded notes cannot be played |
@@ -174,7 +174,7 @@ are handled as described above.
 ## Tests
 `TasksAppTests` (XCTest, 26 tests, Cmd+U):
 - `SharedInteropTests` — Kotlin domain from Swift (`TodoMapper`, `IosDates`, `DateFormatting`);
-- `SharedDataInteropTests` — `TaskRepository` with a Swift fake of the Kotlin `TaskApi` (each test on a wiped SQLite database; state flows are awaited because they lag writes by one emission);
+- `SharedDataInteropTests` — `TaskRepository` with a Swift fake of the Kotlin `TaskApi` (each test on a fresh in-memory database; state flows are awaited because they lag writes by one emission);
 - `VoiceNoteTests` — `VoiceNoteUiState` -> card model mapping, dB -> 0..1 level mapping, spoken durations, and a Swift `AudioRecorder` fake driving the Kotlin `VoiceNoteViewModel` (start / tick / stop with a fixed `MonotonicClock`);
 - `SharedViewModelInteropTests` — Kotlin ViewModels from Swift, `SharedViewModel` mirroring and release;
 - `ViewModelTests` — Swift ViewModel mapping, bindings and save, empty states, stats fractions, localized copy.

@@ -11,10 +11,11 @@
     return self;
 }
 
-- (int64_t)preparePath:(NSString *)path error:(NSError **)error {
-    if (![_backend prepareAtPath:path error:error]) { return 0; }
-    return _backend.durationMs;
+- (BOOL)preparePath:(NSString *)path error:(NSError **)error {
+    return [_backend prepareAtPath:path error:error];
 }
+
+- (int64_t)durationMs { return _backend.durationMs; }
 
 - (void)play { [_backend play]; }
 - (void)pause { [_backend pause]; }
