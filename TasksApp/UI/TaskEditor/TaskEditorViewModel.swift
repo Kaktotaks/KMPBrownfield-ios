@@ -15,11 +15,17 @@ final class TaskEditorViewModel: ObservableObject {
     /// Segment dot colors (`outline` for Low, like the Stats bars).
     func dotColor(_ priority: Priority) -> Color { priority.barFill }
 
+    /// The voice-note card of this sheet (`Draft` target): nothing is written until `save()`.
+    let voice: VoiceNoteCardViewModel
+
     private var forwarding: AnyCancellable?
     private let shared: TaskEditorModel
 
-    init(shared: TaskEditorModel) {
+    init(shared: TaskEditorModel, voice: VoiceNoteCardViewModel) {
         self.shared = shared
+        self.voice = voice
+        // Every change of the draft note is forwarded to the Kotlin editor state (committed by save()).
+        voice.bind(to: shared.viewModel)
         // Nested ObservableObject: changes of `shared.state` don't reach SwiftUI by themselves
         // (classic Combine pitfall), so re-publish them as this object's changes.
         forwarding = shared.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
@@ -27,7 +33,7 @@ final class TaskEditorViewModel: ObservableObject {
 
     // MARK: - Display state
 
-    /// "New Task" / "Edit Task"
+    /// "New task" / "Edit task"
     var screenTitle: String { shared.state.screenTitle }
     var canSave: Bool { shared.state.canSave }
 
@@ -57,8 +63,16 @@ final class TaskEditorViewModel: ObservableObject {
     // MARK: - Intents
 
     /// Returns true when saved (the view dismisses the sheet).
+    /// A recording still running is stopped and kept first (the note must be in the editor state before saving).
     func save() -> Bool {
-        shared.send { $0.save() }
+        voice.finishForSave(editor: shared.viewModel)
+        return shared.send { $0.save() }
+    }
+
+    /// Cancel / sheet dismissed without saving: shared deletes the files recorded in this session and keeps the
+    /// original note. A no-op after a successful save; safe to call twice.
+    func cancel() {
+        shared.send { $0.onCancel() }
     }
 }
 

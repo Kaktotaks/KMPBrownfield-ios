@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kaktotaks/KMPBrownfield-shared",
       "state" : {
-        "revision" : "cf98fdb3f06cdd07cc2a36f9980771c616e95233",
-        "version" : "0.6.0"
+        "revision" : "e0deb8c7448bea3eef9a66bceed0468b091b57f0",
+        "version" : "0.7.0"
       }
     }
   ],

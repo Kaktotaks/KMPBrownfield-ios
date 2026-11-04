@@ -11,7 +11,7 @@ final class ViewModelTests: XCTestCase {
     private var oct29: LocalDate { LocalDate(year: 2026, month: 10, day: 29) }
 
     private func makeApp(tasks: [TaskItem]) -> AppDependencies {
-        let repository = TaskRepository(
+        let repository = makeTestRepository(
             api: FakeTaskApi(result: .success(tasks)),
             dateProvider: clock
         )
@@ -61,7 +61,7 @@ final class ViewModelTests: XCTestCase {
         await app.loadIfNeeded()
         let editor = app.makeTaskEditorViewModel(taskId: nil)
 
-        XCTAssertEqual(editor.screenTitle, "New Task")
+        XCTAssertEqual(editor.screenTitle, "New task")
         XCTAssertFalse(editor.canSave)
         // Errors map to the field they belong to; the banner counts fields.
         XCTAssertEqual(editor.titleError, "Title must be at least 3 characters.")
@@ -79,6 +79,8 @@ final class ViewModelTests: XCTestCase {
         XCTAssertEqual(editor.errorFieldCount, 0)
 
         XCTAssertTrue(editor.save())
+        // `tasks` is a snapshot of the database flow and lags a write by one emission (API_CONTRACT §2).
+        await waitUntil { app.repository.tasks.count == 1 }
         XCTAssertEqual(app.repository.tasks.map(\.title), ["Write tests"])
         XCTAssertEqual(app.repository.tasks.first?.priority, .high)
     }

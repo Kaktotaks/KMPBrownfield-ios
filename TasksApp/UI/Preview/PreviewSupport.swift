@@ -42,11 +42,13 @@ extension AppDependencies {
     }
 
     /// Fake-data graph for previews: a stub `TaskApi` + a fixed date. `result: .failure` previews the error state.
-    static func preview(tasks: [TaskItem]? = nil, fails: Bool = false) -> AppDependencies {
+    static func preview(tasks: [TaskItem]? = nil, fails: Bool = false, voiceAudio: VoiceAudio = .live) -> AppDependencies {
         let tasks = tasks ?? previewTasks
         let provider = PreviewDateProvider()
         let api = PreviewTaskApi(result: fails ? .failure(PreviewError()) : .success(tasks))
-        return AppDependencies(repository: TaskRepository(api: api, dateProvider: provider), dateProvider: provider)
+        // In-memory SQLite (shared createInMemoryRepository): every preview starts seeded from `api`, tasks.db is untouched.
+        let repository = FakeStorage.makeRepository(api: api, dateProvider: provider)
+        return AppDependencies(repository: repository, dateProvider: provider, voiceAudio: voiceAudio)
     }
 }
 

@@ -10,7 +10,7 @@ final class SharedViewModelInteropTests: XCTestCase {
     private var today: LocalDate { IosDates.shared.toLocalDate(date: Date()) }
 
     func testEditorViewModelCreatesTaskFromSwift() async throws {
-        let repository = TaskRepository(
+        let repository = makeTestRepository(
             api: FakeTaskApi(result: .success([])),
             dateProvider: SystemDateProvider.shared
         )
@@ -24,12 +24,14 @@ final class SharedViewModelInteropTests: XCTestCase {
         )
         // MutableStateFlow-backed: uiState.value is updated synchronously.
         XCTAssertTrue(vm.uiState.value.isNew)
-        XCTAssertEqual(vm.uiState.value.screenTitle, "New Task")
+        XCTAssertEqual(vm.uiState.value.screenTitle, "New task")
         XCTAssertFalse(vm.uiState.value.canSave) // empty title
 
         vm.onTitleChange(value: "Write tests")
         XCTAssertTrue(vm.uiState.value.canSave)
         XCTAssertTrue(vm.save())
+        XCTAssertEqual(repository.task(id: 1)?.title, "Write tests") // reads the database directly
+        await waitUntil { repository.tasks.count == 1 }
         XCTAssertEqual(repository.tasks.map(\.title), ["Write tests"])
 
         // iosMain extension: cancels viewModelScope (what the Swift wrapper calls in deinit).
@@ -41,7 +43,7 @@ final class SharedViewModelInteropTests: XCTestCase {
             TaskItem(id: 1, title: "Buy milk", notes: "", priority: .low, dueDate: today, isDone: false),
             TaskItem(id: 2, title: "Call mom", notes: "", priority: .high, dueDate: today, isDone: true),
         ]
-        let repository = TaskRepository(
+        let repository = makeTestRepository(
             api: FakeTaskApi(result: .success(tasks)),
             dateProvider: SystemDateProvider.shared
         )

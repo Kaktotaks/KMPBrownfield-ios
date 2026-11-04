@@ -30,6 +30,8 @@ struct TKColors {
     let heroTextSecondary = Color("TK/heroTextSecondary")
     let ringTrack = Color("TK/ringTrack")
     let scrim = Color("TK/scrim")
+    /// Voice notes: unplayed waveform bars (#E2E2DA light / #3A3A36 dark). Played bars = `textPrimary`, recording dot = `danger`.
+    let waveformTrack = Color("TK/waveformTrack")
 }
 
 extension Color {

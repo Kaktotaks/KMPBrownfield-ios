@@ -122,6 +122,7 @@ struct TaskRowsList: View {
                         priority: row.priority,
                         isDone: row.isDone,
                         isOverdue: row.isOverdue,
+                        voice: row.voice,
                         onTap: { model.openDetail(id: row.id) },
                         onToggle: { model.toggle(id: row.id) }
                     )

@@ -22,6 +22,9 @@ final class TaskDetailViewModel: ObservableObject {
     /// Set on delete so "Task not found" doesn't flash while the screen pops.
     @Published private(set) var isDeleting = false
 
+    /// The voice-note card of this task (`ExistingTask` target): records / plays / replaces / deletes right away.
+    let voice: VoiceNoteCardViewModel
+
     private var forwarding: AnyCancellable?
     private let shared: TaskDetailModel
     private let app: AppDependencies
@@ -29,6 +32,7 @@ final class TaskDetailViewModel: ObservableObject {
     init(shared: TaskDetailModel, app: AppDependencies) {
         self.shared = shared
         self.app = app
+        self.voice = app.makeVoiceNoteViewModel(target: VoiceNoteTarget.ExistingTask(taskId: shared.viewModel.taskId))
         // Nested ObservableObject: changes of `shared.state` don't reach SwiftUI by themselves
         // (classic Combine pitfall), so re-publish them as this object's changes.
         forwarding = shared.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
@@ -66,6 +70,7 @@ final class TaskDetailViewModel: ObservableObject {
     }
 
     func showEditor() {
+        voice.pausePlayback()
         editor = app.makeTaskEditorViewModel(taskId: shared.viewModel.taskId)
     }
 }

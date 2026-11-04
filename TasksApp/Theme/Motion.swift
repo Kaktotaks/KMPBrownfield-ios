@@ -11,6 +11,9 @@ enum Motion {
     static let stagger = 80
     /// Skeleton pulse: one half-cycle (M7).
     static let pulseHalfCycle = 1000
+    /// Voice notes (notes board): recording dot pulse loop, live bar smoothing, last-10-s switch.
+    static let recordingDotCycle = 1000
+    static let liveBarSmoothing = 80
 
     /// cubic-bezier(0.2, 0, 0, 1).
     static func emphasized(_ durationMs: Int, delayMs: Int = 0) -> Animation {

@@ -62,6 +62,13 @@ struct TKTextStyle {
     static let savePill = TKTextStyle(.bold, 15, 20, 0, .body)
     /// Overdue due line: `subhead` weight 600.
     static let subheadStrong = TKTextStyle(.semibold, 14, 20, 0, .subheadline)
+    /// Voice recorder timer: Inter Tight 800 48/52, tabular.
+    static let recorderTimer = TKTextStyle(.tightExtraBold, 48, 52, -0.03, .largeTitle, tabular: true)
+    /// Voice buttons (Re-record / Delete / Cancel / Stop): Inter 600 15.
+    static let voiceButton = TKTextStyle(.semibold, 15, 20, 0, .body)
+    /// Player elapsed time "0:12" (600) and "/ 0:42" (500), tabular.
+    static let playerElapsed = TKTextStyle(.semibold, 15, 20, 0, .subheadline, tabular: true)
+    static let playerTotal = TKTextStyle(.medium, 15, 20, 0, .subheadline, tabular: true)
     /// StatusBadge: `badge` at 12.
     static let statusBadge = TKTextStyle(.bold, 12, 14, 0.04, .caption, uppercase: true)
 }
