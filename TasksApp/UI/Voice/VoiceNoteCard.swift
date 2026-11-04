@@ -29,10 +29,10 @@ struct VoiceNoteCard: View {
             .animation(Motion.emphasized(reduceMotion ? Motion.short : Motion.medium), value: card.kind)
             .onChange(of: scenePhase) { _, phase in model.scenePhaseChanged(phase) }
             .onChange(of: model.confirmation) { _, new in if let new { shownConfirmation = new } }
-            .confirmationDialog(
+            // The references (VN-iOS-Confirm-*.png) show a centered system alert (Cancel | Delete / Replace), not an action sheet.
+            .alert(
                 confirmationTitle,
-                isPresented: confirmationPresented,
-                titleVisibility: .visible
+                isPresented: confirmationPresented
             ) {
                 if shownConfirmation == .delete {
                     Button("voice_delete", role: .destructive) { model.confirm() }
