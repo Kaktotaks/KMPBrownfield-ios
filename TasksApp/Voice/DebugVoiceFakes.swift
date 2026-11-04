@@ -52,7 +52,7 @@ struct DebugLaunch {
         let unavailable = unavailable
         return VoiceAudio(
             makeRecorder: { FakeVoiceRecorder(failStart: failRecording) },
-            makePlayer: { makeAudioPlayer(FakeVoicePlayer(failPrepare: unavailable)) },
+            makePlayer: { FakeVoicePlayer(failPrepare: unavailable) },
             permission: FakeMicPermission(status: micStatus, requestResult: requestGranted)
         )
     }
@@ -89,7 +89,7 @@ extension VoiceAudio {
     ) -> VoiceAudio {
         VoiceAudio(
             makeRecorder: { FakeVoiceRecorder(failStart: failRecording) },
-            makePlayer: { makeAudioPlayer(FakeVoicePlayer(failPrepare: unavailable)) },
+            makePlayer: { FakeVoicePlayer(failPrepare: unavailable) },
             permission: FakeMicPermission(status: permission, requestResult: requestGranted)
         )
     }
@@ -156,11 +156,11 @@ final class FakeVoiceRecorder: NSObject, AudioRecorder {
 }
 
 /// "Plays" a note on the wall clock (rate-aware); the duration is read from the fake audio file.
-final class FakeVoicePlayer: NSObject, VoicePlayerBackend {
+final class FakeVoicePlayer: NSObject, AudioPlayer {
     var onCompletion: (() -> Void)?
 
     private let failPrepare: Bool
-    private(set) var durationMs: Int64 = 0
+    private var duration: Int64 = 0
     private var prepared = false
     private var speed: Float = 1
     private var basePositionMs: Int64 = 0
@@ -169,13 +169,15 @@ final class FakeVoicePlayer: NSObject, VoicePlayerBackend {
 
     init(failPrepare: Bool) { self.failPrepare = failPrepare }
 
-    func prepare(atPath path: String) throws {
-        releasePlayer()
+    func prepare(path: String) throws {
+        dispose()
         if failPrepare { throw FakeVoiceError() }
         guard let text = try? String(contentsOfFile: path, encoding: .utf8), let ms = Int64(text) else { throw FakeVoiceError() }
-        durationMs = ms
+        duration = ms
         prepared = true
     }
+
+    func durationMs() -> Int64 { duration }
 
     func play() {
         guard prepared, playingSince == nil else { return }
@@ -184,35 +186,35 @@ final class FakeVoicePlayer: NSObject, VoicePlayerBackend {
     }
 
     func pause() {
-        basePositionMs = positionMs
+        basePositionMs = positionMs()
         playingSince = nil
         generation += 1
     }
 
-    func seek(toMs ms: Int64) {
-        basePositionMs = ms
+    func seekTo(positionMs: Int64) {
+        basePositionMs = positionMs
         if playingSince != nil {
             playingSince = Date()
             scheduleCompletion()
         }
     }
 
-    func setRate(_ rate: Float) {
-        basePositionMs = positionMs
+    func setSpeed(speed: Float) {
+        basePositionMs = positionMs()
         if playingSince != nil { playingSince = Date() }
-        speed = rate
+        self.speed = speed
         if playingSince != nil { scheduleCompletion() }
     }
 
-    var positionMs: Int64 {
+    func positionMs() -> Int64 {
         guard let playingSince else { return basePositionMs }
         let advanced = Int64(Date().timeIntervalSince(playingSince) * 1000 * Double(speed))
-        return min(basePositionMs + advanced, durationMs)
+        return min(basePositionMs + advanced, duration)
     }
 
-    var isPlaying: Bool { playingSince != nil }
+    func isPlaying() -> Bool { playingSince != nil }
 
-    func releasePlayer() {
+    func dispose() {
         prepared = false
         playingSince = nil
         basePositionMs = 0
@@ -222,7 +224,7 @@ final class FakeVoicePlayer: NSObject, VoicePlayerBackend {
     private func scheduleCompletion() {
         generation += 1
         let token = generation
-        let remaining = Double(durationMs - positionMs) / 1000 / Double(speed)
+        let remaining = Double(duration - positionMs()) / 1000 / Double(speed)
         DispatchQueue.main.asyncAfter(deadline: .now() + max(remaining, 0)) { [weak self] in
             guard let self, token == generation, playingSince != nil else { return }
             playingSince = nil

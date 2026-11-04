@@ -11,7 +11,7 @@ struct VoiceAudio {
 
     static let live = VoiceAudio(
         makeRecorder: { AVVoiceRecorder() },
-        makePlayer: { makeAudioPlayer(AVVoicePlayer()) },
+        makePlayer: { AVVoicePlayer() },
         permission: AVMicPermission()
     )
 }

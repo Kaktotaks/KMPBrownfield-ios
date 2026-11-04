@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import XCTest
+import Shared
 @testable import TasksApp
 
 /// Opt-in screenshot generator (skipped unless `SCREENSHOT_DIR` is set), used for the design-handoff comparison:

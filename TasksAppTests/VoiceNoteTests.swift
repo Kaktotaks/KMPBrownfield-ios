@@ -126,7 +126,7 @@ final class VoiceNoteInteropTests: XCTestCase {
             repository: repository,
             files: repository.voiceFiles,
             recorder: recorder,
-            player: makeAudioPlayer(FakeVoicePlayer(failPrepare: false)),
+            player: FakeVoicePlayer(failPrepare: false),
             permission: FakeMicPermission(status: .granted, requestResult: true),
             clock: clock
         )
@@ -167,7 +167,7 @@ final class VoiceNoteInteropTests: XCTestCase {
             repository: repository,
             files: repository.voiceFiles,
             recorder: recorder,
-            player: makeAudioPlayer(FakeVoicePlayer(failPrepare: false)),
+            player: FakeVoicePlayer(failPrepare: false),
             permission: FakeMicPermission(status: .denied, requestResult: false)
         )
         defer { vm.clear() }

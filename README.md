@@ -43,9 +43,6 @@ speed, file lifecycle) is in `shared`; the app provides only thin native adapter
 - **Adapters** (`TasksApp/Voice/`): `AVVoiceRecorder` (AAC .m4a, mono, 44.1 kHz, 64 kbps, metering, dB -50...0 -> 0...1),
   `AVVoicePlayer` (`AVAudioPlayer`, rate 1x / 1.5x / 2x), `AVMicPermission` (`AVAudioApplication`). Each voice-note
   ViewModel gets its own recorder and player; only the permission provider is shared.
-- **Objective-C shim**: `VoicePlayerAdapter` implements the Kotlin `AudioPlayer` and forwards to the Swift `VoicePlayerBackend`.
-  Reason: Swift cannot conform an NSObject subclass to `AudioPlayer` because its `release()` collides with `NSObject.release`.
-  Deletable if shared renames `AudioPlayer.release()`.
 - **Permission**: `NSMicrophoneUsageDescription` = "Record voice notes for your tasks." (`Config/TasksApp-Info.plist`).
   Our own explainer card shows first; after a denial the card offers "Open Settings"
   (`UIApplication.openSettingsURLString`); granting it there works on return (`scenePhase` active -> `onAppForegrounded`).

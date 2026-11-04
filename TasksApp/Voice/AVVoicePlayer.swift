@@ -1,19 +1,19 @@
 import AVFoundation
 import Shared
 
-/// Native half of the shared `AudioPlayer` (reached through `VoicePlayerAdapter`): `AVAudioPlayer` with rate control (1x / 1.5x / 2x).
-/// Shared calls `prepare` lazily and `release()` whenever the note changes or a recording starts,
+/// Native half of the shared `AudioPlayer`: `AVAudioPlayer` with rate control (1x / 1.5x / 2x).
+/// Shared calls `prepare` lazily and `dispose()` whenever the note changes or a recording starts,
 /// so no native player is held across notes. All calls come from the main thread.
-final class AVVoicePlayer: NSObject, VoicePlayerBackend, AVAudioPlayerDelegate {
+final class AVVoicePlayer: NSObject, AudioPlayer, AVAudioPlayerDelegate {
     var onCompletion: (() -> Void)?
 
     private var player: AVAudioPlayer?
-    private(set) var durationMs: Int64 = 0
+    private var duration: Int64 = 0
     /// `setRate` may arrive before `prepare` (shared sets it on a note change): applied on prepare.
     private var speed: Float = 1
 
-    func prepare(atPath path: String) throws {
-        releasePlayer()
+    func prepare(path: String) throws {
+        dispose()
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.playback, mode: .default)
         try session.setActive(true)
@@ -23,8 +23,11 @@ final class AVVoicePlayer: NSObject, VoicePlayerBackend, AVAudioPlayerDelegate {
         player.rate = speed
         guard player.prepareToPlay() else { throw AVVoiceError.cannotStart }
         self.player = player
-        durationMs = Int64((player.duration * 1000).rounded())
+        duration = Int64((player.duration * 1000).rounded())
     }
+
+    /// Valid after a successful `prepare`.
+    func durationMs() -> Int64 { duration }
 
     func play() {
         guard let player else { return }
@@ -36,25 +39,25 @@ final class AVVoicePlayer: NSObject, VoicePlayerBackend, AVAudioPlayerDelegate {
         player?.pause()
     }
 
-    func seek(toMs ms: Int64) {
-        player?.currentTime = Double(ms) / 1000
+    func seekTo(positionMs: Int64) {
+        player?.currentTime = Double(positionMs) / 1000
     }
 
     /// Does not start playback: `rate` only changes how fast a running player goes.
-    func setRate(_ rate: Float) {
-        speed = rate
-        player?.rate = rate
+    func setSpeed(speed: Float) {
+        self.speed = speed
+        player?.rate = speed
     }
 
-    var positionMs: Int64 {
+    func positionMs() -> Int64 {
         Int64(((player?.currentTime ?? 0) * 1000).rounded())
     }
 
-    var isPlaying: Bool {
+    func isPlaying() -> Bool {
         player?.isPlaying ?? false
     }
 
-    func releasePlayer() {
+    func dispose() {
         guard let player else { return }
         self.player = nil
         player.stop()

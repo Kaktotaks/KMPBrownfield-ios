@@ -100,6 +100,7 @@ final class SharedDataInteropTests: XCTestCase {
         XCTAssertTrue(repository.state.value is LoadStateLoading)
 
         await app.loadIfNeeded()
+        await waitUntil { repository.state.value is LoadStateError }
 
         // Kotlin maps the thrown NSError to LoadState.Error (no Swift error escapes).
         guard case .error = onEnum(of: repository.state.value) else {
