@@ -113,3 +113,5 @@ typealias TaskDetailModel = SharedViewModel<Shared.TaskDetailViewModel, TaskDeta
 typealias TaskEditorModel = SharedViewModel<Shared.TaskEditorViewModel, TaskEditorUiState>
 /// `StatsUiState` is a Kotlin sealed interface → ObjC protocol → existential.
 typealias StatsModel = SharedViewModel<Shared.StatsViewModel, any StatsUiState>
+/// `VoiceNoteUiState` is a Kotlin sealed class (SKIE `onEnum`).
+typealias VoiceNoteModel = SharedViewModel<Shared.VoiceNoteViewModel, VoiceNoteUiState>
