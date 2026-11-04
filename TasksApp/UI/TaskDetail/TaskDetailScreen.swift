@@ -48,7 +48,7 @@ struct TaskDetailContent: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.sectionGap) {
-                HeroCard {
+                HeroCard(darkUsesSurface2: true) {
                     HStack(spacing: 8) {
                         PriorityBadge(priority: details.priority)
                         StatusBadge(isDone: details.isDone)
@@ -78,6 +78,8 @@ struct TaskDetailContent: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.tk.surface, in: RoundedRectangle(cornerRadius: Radius.l, style: .continuous))
                 }
+
+                VoiceNoteCard(model: model.voice, placement: .detail)
 
                 InfoRowsCard(rows: [
                     InfoRowItem(icon: .flag, label: "priority", value: details.priority.displayName),

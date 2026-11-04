@@ -10,6 +10,7 @@ struct TaskCard: View {
     let priority: Priority
     let isDone: Bool
     let isOverdue: Bool
+    var voice: VoiceRowInfo? = nil
     let onTap: () -> Void
     let onToggle: () -> Void
 
@@ -20,6 +21,7 @@ struct TaskCard: View {
             L10n.format("due_format", dueDate),
             isDone ? L10n.string("a11y_done") : nil,
             isOverdue ? L10n.string("a11y_overdue") : nil,
+            voice.map { L10n.format("voice_a11y_row", VoiceSpeech.duration(ms: $0.durationMs)) },
         ].compactMap { $0 }.joined(separator: ", ")
     }
 
@@ -40,7 +42,17 @@ struct TaskCard: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             PriorityBadge(priority: priority)
                         }
-                        DueLine(dueDate: dueDate, isOverdue: isOverdue, isDone: isDone)
+                        // The indicator sits after the due text; it wraps to its own line when the row is narrow.
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 8) {
+                                DueLine(dueDate: dueDate, isOverdue: isOverdue, isDone: isDone)
+                                if let voice { VoiceNoteIndicator(durationText: voice.durationText) }
+                            }
+                            VStack(alignment: .leading, spacing: 4) {
+                                DueLine(dueDate: dueDate, isOverdue: isOverdue, isDone: isDone)
+                                if let voice { VoiceNoteIndicator(durationText: voice.durationText) }
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 16)

@@ -40,6 +40,10 @@ struct TaskEditorScreen: View {
                     .popover(isPresented: $isPickingDate) {
                         DueDatePickerPopover(selection: model.dueDate)
                     }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("voice_section").tkStyled(.overline).foregroundStyle(Color.tk.textSecondary)
+                        VoiceNoteCard(model: model.voice, placement: .editor)
+                    }
                 }
                 .tkAnimation(Motion.emphasized(Motion.medium), value: model.errorFieldCount)
                 .padding(.horizontal, Spacing.gutter)
@@ -49,6 +53,8 @@ struct TaskEditorScreen: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .background(Color.tk.bg)
+        // Swipe-down dismissal counts as Cancel too (no-op after Save).
+        .onDisappear { model.cancel() }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(Radius.xl)
@@ -63,7 +69,10 @@ struct TaskEditorScreen: View {
                 .foregroundStyle(Color.tk.textPrimary)
                 .accessibilityAddTraits(.isHeader)
             HStack {
-                Button { dismiss() } label: {
+                Button {
+                    model.cancel()
+                    dismiss()
+                } label: {
                     Text("cancel")
                         .tkStyle(.bodyMedium)
                         .foregroundStyle(Color.tk.textPrimary)

@@ -4,13 +4,16 @@ import Shared
 /// HeroCard (§2): `heroBg`, r `xl`, padding 22 (detail) / 24 (stats).
 struct HeroCard<Content: View>: View {
     var padding: CGFloat = 22
+    /// Dark Task detail uses `surface2` so the hero reads against true black (voice-notes board).
+    var darkUsesSurface2 = false
+    @Environment(\.colorScheme) private var colorScheme
     @ViewBuilder let content: () -> Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0, content: content)
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.tk.heroBg, in: RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
+            .background(darkUsesSurface2 && colorScheme == .dark ? Color.tk.surface2 : Color.tk.heroBg, in: RoundedRectangle(cornerRadius: Radius.xl, style: .continuous))
     }
 }
 
