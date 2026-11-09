@@ -39,7 +39,7 @@ struct PillSearchField: View {
 }
 
 /// Border of a field (§2): 1.5 `border`, focused 2 `textPrimary`, invalid 2 `danger`.
-private struct FieldChrome: ViewModifier {
+struct FieldChrome: ViewModifier {
     let focused: Bool
     let invalid: Bool
     let minHeight: CGFloat
@@ -58,7 +58,7 @@ private struct FieldChrome: ViewModifier {
 }
 
 /// Label above a field: `overline`, `textSecondary`, gap 6.
-private struct FieldLabel: View {
+struct FieldLabel: View {
     let key: LocalizedStringKey
     var body: some View {
         Text(key).tkStyled(.overline).foregroundStyle(Color.tk.textSecondary)
