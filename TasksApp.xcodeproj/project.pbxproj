@@ -465,7 +465,7 @@
 			repositoryURL = "https://github.com/Kaktotaks/KMPBrownfield-shared";
 			requirement = {
 				kind = upToNextMinorVersion;
-				minimumVersion = 0.7.0;
+				minimumVersion = 0.8.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
