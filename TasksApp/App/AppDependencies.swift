@@ -12,12 +12,30 @@ final class AppDependencies {
     let dateProvider: any DateProvider
     let validator: TaskValidator
     let voiceAudio: VoiceAudio
+    /// Map tab: "now" for past / overdue / next stop (shared `TimeProvider`), routing (OSRM) and geocoding (Nominatim).
+    let timeProvider: any TimeProvider
+    let routing: any RoutingApi
+    let geocoder: any Geocoder
+    /// UI language for geocoding (`accept-language`): "en" / "uk".
+    let language: String
 
-    init(repository: TaskRepository, dateProvider: any DateProvider, voiceAudio: VoiceAudio = .live) {
+    init(
+        repository: TaskRepository,
+        dateProvider: any DateProvider,
+        voiceAudio: VoiceAudio = .live,
+        timeProvider: (any TimeProvider)? = nil,
+        routing: (any RoutingApi)? = nil
+    ) {
         self.repository = repository
         self.dateProvider = dateProvider
         self.validator = TaskValidator(dateProvider: dateProvider)
         self.voiceAudio = voiceAudio
+        // A frozen debug clock is both a DateProvider and a TimeProvider, so one object freezes "now" everywhere.
+        self.timeProvider = timeProvider ?? (dateProvider as? any TimeProvider) ?? SystemTimeProvider.shared
+        self.routing = routing ?? OsrmRoutingApi()
+        let language = Bundle.main.preferredLocalizations.first ?? "en"
+        self.language = language
+        self.geocoder = NominatimGeocoder(language: language)
     }
 
     /// Production graph: `TasksIos.createRepository()` = Ktor client (Darwin engine) + SQLite database
@@ -25,7 +43,12 @@ final class AppDependencies {
     convenience init() {
         #if DEBUG
         if let debug = DebugLaunch.current {
-            self.init(repository: debug.makeRepository(), dateProvider: debug.dateProvider, voiceAudio: debug.audio)
+            self.init(
+                repository: debug.makeRepository(),
+                dateProvider: debug.dateProvider,
+                voiceAudio: debug.audio,
+                routing: MapDebug.routing
+            )
             return
         }
         #endif
@@ -85,6 +108,17 @@ final class AppDependencies {
         return VoiceNoteModel(vm, states: vm.uiState, value: { vm.uiState.value })
     }
 
+    /// The Kotlin `MapViewModel` (shared 0.9.0): day, stops, route, selection, move, new-task draft.
+    func makeMap() -> MapModel {
+        let vm = Shared.MapViewModel(repository: repository, routing: routing, geocoder: geocoder, time: timeProvider)
+        return MapModel(vm, states: vm.uiState, value: { vm.uiState.value })
+    }
+
+    func makePlaceSearch() -> PlaceSearchModel {
+        let vm = Shared.PlaceSearchViewModel(geocoder: geocoder, language: language)
+        return PlaceSearchModel(vm, states: vm.uiState, value: { vm.uiState.value })
+    }
+
     func makeStats() -> StatsModel {
         let vm = Shared.StatsViewModel(repository: repository, dateProvider: dateProvider)
         return StatsModel(vm, states: vm.uiState, value: { vm.uiState.value })
@@ -104,7 +138,13 @@ final class AppDependencies {
     func makeTaskEditorViewModel(taskId: Int32?) -> TaskEditorViewModel {
         let shared = makeTaskEditor(taskId: taskId)
         let voice = makeVoiceNoteViewModel(target: VoiceNoteTarget.Draft(initial: shared.state.voiceNote))
-        return TaskEditorViewModel(shared: shared, voice: voice)
+        let editor = TaskEditorViewModel(shared: shared, voice: voice)
+        editor.makePlaceSearch = { [weak self] in self?.makePlaceSearch() }
+        return editor
+    }
+
+    func makeMapViewModel() -> MapViewModel {
+        MapViewModel(shared: makeMap(), app: self)
     }
 
     func makeVoiceNoteViewModel(target: VoiceNoteTarget) -> VoiceNoteCardViewModel {
