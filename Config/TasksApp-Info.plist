@@ -14,11 +14,11 @@
 	<!-- Voice notes: shown by the system microphone dialog (after our own explainer card). -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record voice notes for your tasks.</string>
-	<!-- Launch screen background = token `bg` (Any/Dark), so dark mode doesn't flash white. -->
+	<!-- Launch screen = plain #0A0A0A (SplashBackground, Any/Dark), no image: hands over to the in-app SplashOverlay. -->
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
-		<string>LaunchBackground</string>
+		<string>SplashBackground</string>
 	</dict>
 </dict>
 </plist>
