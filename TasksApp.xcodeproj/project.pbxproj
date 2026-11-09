@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		5A1B2C3D4E5F60718293A4B5 /* Shared in Frameworks */ = {isa = PBXBuildFile; productRef = 6B2C3D4E5F60718293A4B5C6 /* Shared */; };
+		A8B9C0D1E2F30415263748A9 /* MapLibre in Frameworks */ = {isa = PBXBuildFile; productRef = B9C0D1E2F3041526374859BA /* MapLibre */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +52,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5A1B2C3D4E5F60718293A4B5 /* Shared in Frameworks */,
+				A8B9C0D1E2F30415263748A9 /* MapLibre in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -96,6 +98,7 @@
 			name = TasksApp;
 			packageProductDependencies = (
 				6B2C3D4E5F60718293A4B5C6 /* Shared */,
+				B9C0D1E2F3041526374859BA /* MapLibre */,
 			);
 			productName = TasksApp;
 			productReference = 55F8FB420849DBEE2CAE684B /* TasksApp.app */;
@@ -155,6 +158,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				7C3D4E5F60718293A4B5C6D7 /* XCRemoteSwiftPackageReference "KMPBrownfield-shared" */,
+				C0D1E2F30415263748596ACB /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 402C96BAC77603505D02022F /* Products */;
@@ -468,6 +472,14 @@
 				minimumVersion = 0.8.0;
 			};
 		};
+		C0D1E2F30415263748596ACB /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/maplibre/maplibre-gl-native-distribution";
+			requirement = {
+				kind = exactVersion;
+				version = 7.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -475,6 +487,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7C3D4E5F60718293A4B5C6D7 /* XCRemoteSwiftPackageReference "KMPBrownfield-shared" */;
 			productName = Shared;
+		};
+		B9C0D1E2F3041526374859BA /* MapLibre */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0D1E2F30415263748596ACB /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */;
+			productName = MapLibre;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
