@@ -11,10 +11,10 @@ import UIKit
 @MainActor
 final class RouteRenderer: NSObject {
     private var style: MLNStyle?
-    private let pastSource = MLNShapeSource(identifier: "route-past", shape: nil, options: nil)
-    private let liveSource = MLNShapeSource(identifier: "route-live", shape: nil, options: nil)
-    private let pendingSource = MLNShapeSource(identifier: "route-pending", shape: nil, options: nil)
-    private let linkSource = MLNShapeSource(identifier: "route-move-link", shape: nil, options: nil)
+    private var pastSource = MLNShapeSource(identifier: "route-past", shape: nil, options: nil)
+    private var liveSource = MLNShapeSource(identifier: "route-live", shape: nil, options: nil)
+    private var pendingSource = MLNShapeSource(identifier: "route-pending", shape: nil, options: nil)
+    private var linkSource = MLNShapeSource(identifier: "route-move-link", shape: nil, options: nil)
     private var pastCasing: MLNLineStyleLayer?
     private var pastLine: MLNLineStyleLayer?
     private var liveCasing: MLNLineStyleLayer?
@@ -35,7 +35,16 @@ final class RouteRenderer: NSObject {
     func install(in style: MLNStyle) {
         cancelAnimation()
         self.style = style
-        for source in [pastSource, liveSource, pendingSource, linkSource] where style.source(withIdentifier: source.identifier) == nil {
+        // An MLNSource can belong to one style only: after a style reload the old instances throw in addSource.
+        pastSource = MLNShapeSource(identifier: "route-past", shape: nil, options: nil)
+        liveSource = MLNShapeSource(identifier: "route-live", shape: nil, options: nil)
+        pendingSource = MLNShapeSource(identifier: "route-pending", shape: nil, options: nil)
+        linkSource = MLNShapeSource(identifier: "route-move-link", shape: nil, options: nil)
+        for id in ["route-move-link-line", "route-pending-line", "route-live-line", "route-live-casing", "route-past-line", "route-past-casing"] {
+            if let layer = style.layer(withIdentifier: id) { style.removeLayer(layer) }
+        }
+        for source in [pastSource, liveSource, pendingSource, linkSource] {
+            if let old = style.source(withIdentifier: source.identifier) { style.removeSource(old) }
             style.addSource(source)
         }
         let below = style.layer(withIdentifier: MapStyle.shared.ROUTE_BELOW_LAYER)
