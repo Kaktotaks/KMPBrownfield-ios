@@ -10,6 +10,7 @@ import Shared
 //                            reference times and addresses; task 1 is marked done; tasks 2 and 3 get a voice note).
 //                            Implies the fake voice audio / in-memory database of `-fakeVoiceAudio`.
 //   -mapTab <tasks|map|stats>  initial tab (default tasks)
+//   -mapOpenDetail <id>      push the task detail of task <id> on the Tasks tab (tab-bar check: it stays visible)
 //   -mapDay <N>              select the day N days from "today" (0 = Today, 1 = Tomorrow = the Empty reference, -1 = Yesterday)
 //   -mapScenario <name>      drive the screen into a reference state once the day has loaded:
 //                              expanded   route sheet expanded
@@ -32,6 +33,7 @@ enum MapDebug {
     static var isFrozen: Bool { arguments.contains("-mapFrozenNow") }
     static var forceOffline: Bool { arguments.contains("-mapForceOffline") || scenario == "offline" }
     static var initialTab: String? { value(of: "-mapTab") }
+    static var openDetailId: Int32? { value(of: "-mapOpenDetail").flatMap(Int32.init) }
     static var day: Int? { value(of: "-mapDay").flatMap(Int.init) }
     static var scenario: String? { value(of: "-mapScenario") }
 

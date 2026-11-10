@@ -2,8 +2,8 @@ import SwiftUI
 import UIKit
 import Shared
 
-/// Root navigation: the SYSTEM tab bar with "Tasks", "Map" and "Stats" (selected item tinted `textPrimary`; no custom
-/// lime pill, see handoff §0). Each tab owns its own NavigationStack (the Map tab is a full-screen map).
+/// Root navigation: the custom `TKTabBar` (Android NavigationBar look and behaviour, accent pill) with "Tasks", "Map"
+/// and "Stats" (the user asked for iOS to match Android; this replaces the system bar of handoff §0). Each tab owns its own NavigationStack (the Map tab is a full-screen map).
 ///
 /// The animated splash (`SplashOverlay`, SPLASH_HANDOFF §3) sits above the tabs in a root `ZStack`. Its phase is
 /// `@State` of this root view, which lives for the whole scene, so the splash plays on cold start only.
@@ -26,6 +26,15 @@ struct RootView: View {
 
     enum RootTab: Hashable { case tasks, map, stats }
 
+    /// Same order, labels and glyphs as the Android tabs (Tasks: ListChecks, Map: Pin, Stats: BarChart).
+    static var tabItems: [TKTabBar<RootTab>.Item] {
+        [
+            .init(tab: .tasks, title: String(localized: "tasks_title"), icon: .tk(.listChecks), identifier: "tab_tasks"),
+            .init(tab: .map, title: MapFormat.tr("map_tab"), icon: .map(.pin), identifier: "tab_map"),
+            .init(tab: .stats, title: String(localized: "stats_title"), icon: .tk(.barChart), identifier: "tab_stats"),
+        ]
+    }
+
     private static var initialTab: RootTab {
         #if DEBUG
         switch MapDebug.initialTab {
@@ -45,32 +54,28 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            TabView(selection: $tab) {
-                TaskListScreen(model: taskList)
-                    .tabItem {
-                        Label("tasks_title", systemImage: "checklist")
-                    }
-                    .tag(RootTab.tasks)
+            // Tab bar below the tabs (as the Android Scaffold bottomBar). The tabs stay alive in a TabView whose system
+            // bar is hidden, so each keeps its own NavigationStack and state; the bar is `TKTabBar` (copy of the
+            // Android M3 NavigationBar). It is a sibling under the splash overlay, like the system bar was.
+            VStack(spacing: 0) {
+                TabView(selection: $tab) {
+                    TaskListScreen(model: taskList)
+                        .toolbar(.hidden, for: .tabBar)
+                        .tag(RootTab.tasks)
 
-                // Created on first display; the map view itself waits for the splash to finish (`isMapEnabled`), so
-                // tile requests never compete with the launch hand-over.
-                MapTab(app: app, isMapEnabled: splash == .done)
-                    .tabItem {
-                        Label {
-                            Text(MapFormat.tr("map_tab"))
-                        } icon: {
-                            Image(systemName: "mappin")
-                        }
-                    }
-                    .tag(RootTab.map)
+                    // Created on first display; the map view itself waits for the splash to finish (`isMapEnabled`),
+                    // so tile requests never compete with the launch hand-over.
+                    MapTab(app: app, isMapEnabled: splash == .done)
+                        .toolbar(.hidden, for: .tabBar)
+                        .tag(RootTab.map)
 
-                StatsScreen(model: app.makeStatsViewModel())
-                    .tabItem {
-                        Label("stats_title", systemImage: "chart.bar")
-                    }
-                    .tag(RootTab.stats)
+                    StatsScreen(model: app.makeStatsViewModel())
+                        .toolbar(.hidden, for: .tabBar)
+                        .tag(RootTab.stats)
+                }
+
+                TKTabBar(items: Self.tabItems, selection: $tab)
             }
-            .tint(Color.tk.textPrimary)
             // VoiceOver stays on the list only after the overlay is gone.
             .accessibilityHidden(splash != .done)
 
@@ -90,6 +95,9 @@ struct RootView: View {
         .task {
             // Loaded once on app start.
             await app.loadIfNeeded()
+            #if DEBUG
+            if let id = MapDebug.openDetailId { taskList.openDetail(id: id) }
+            #endif
         }
     }
 
