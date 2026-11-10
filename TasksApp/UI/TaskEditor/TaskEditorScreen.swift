@@ -40,6 +40,8 @@ struct TaskEditorScreen: View {
                     .popover(isPresented: $isPickingDate) {
                         DueDatePickerPopover(selection: model.dueDate)
                     }
+                    EditorTimeField(model: model)
+                    EditorPlaceField(model: model)
                     VStack(alignment: .leading, spacing: 6) {
                         Text("voice_section").tkStyled(.overline).foregroundStyle(Color.tk.textSecondary)
                         VoiceNoteCard(model: model.voice, placement: .editor)

@@ -107,6 +107,12 @@ final class VoiceNoteCardViewModel: ObservableObject {
         shared.viewModel.bindTo(editor: editor)
     }
 
+    /// Map "New task here": forwards every note change of this Draft card to the Kotlin `MapViewModel`'s draft
+    /// (a cancelled draft deletes its recordings).
+    func bind(to map: Shared.MapViewModel) {
+        shared.viewModel.bindTo(map: map)
+    }
+
     /// Save pressed mid-recording: finish and keep the clip first. `bindTo` forwards on a later main-loop turn,
     /// so the current note is also pushed to the editor synchronously (save() follows immediately).
     func finishForSave(editor: Shared.TaskEditorViewModel) {

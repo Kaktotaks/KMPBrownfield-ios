@@ -69,6 +69,8 @@ struct TKTextStyle {
     /// Player elapsed time "0:12" (600) and "/ 0:42" (500), tabular.
     static let playerElapsed = TKTextStyle(.semibold, 15, 20, 0, .subheadline, tabular: true)
     static let playerTotal = TKTextStyle(.medium, 15, 20, 0, .subheadline, tabular: true)
+    /// Map task sheet title: Inter Tight 800 28/31, -0.03 em.
+    static let mapSheetTitle = TKTextStyle(.tightExtraBold, 28, 31, -0.03, .title)
     /// StatusBadge: `badge` at 12.
     static let statusBadge = TKTextStyle(.bold, 12, 14, 0.04, .caption, uppercase: true)
 }

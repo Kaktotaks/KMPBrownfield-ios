@@ -18,7 +18,8 @@ import Shared
 
 struct DebugLaunch {
     static let current: DebugLaunch? = {
-        ProcessInfo.processInfo.arguments.contains("-fakeVoiceAudio") ? DebugLaunch() : nil
+        let arguments = ProcessInfo.processInfo.arguments
+        return arguments.contains("-fakeVoiceAudio") || arguments.contains("-mapFrozenNow") ? DebugLaunch() : nil
     }()
 
     let micStatus: MicPermission
@@ -26,7 +27,8 @@ struct DebugLaunch {
     let failRecording: Bool
     let unavailable: Bool
     let seed: [(taskId: Int32, durationMs: Int64)]
-    let dateProvider: any DateProvider = PreviewDateProvider()
+    /// "Today" = 2 Nov 2026 (the voice handoff day), or Wed 4 Nov 2026 12:40 with `-mapFrozenNow` (Map handoff).
+    let dateProvider: any DateProvider = MapDebug.isFrozen ? MapDebug.frozenClock() : PreviewDateProvider()
 
     private init() {
         let defaults = UserDefaults.standard
@@ -39,7 +41,8 @@ struct DebugLaunch {
         let forced = defaults.string(forKey: "forceVoiceError")
         failRecording = forced == "recordFailed"
         unavailable = forced == "unavailable"
-        let spec = defaults.string(forKey: "seedVoice") ?? ""
+        // Map references: the dentist (3) and passport (2) tasks carry a voice note unless -seedVoice says otherwise.
+        let spec = defaults.string(forKey: "seedVoice") ?? (MapDebug.isFrozen ? "3:18000,2:65000" : "")
         seed = spec.split(separator: ",").compactMap { pair in
             let parts = pair.split(separator: ":")
             guard parts.count == 2, let id = Int32(parts[0]), let ms = Int64(parts[1]) else { return nil }
@@ -59,11 +62,13 @@ struct DebugLaunch {
 
     /// Fake API (sample tasks) in an in-memory database.
     @MainActor func makeRepository() -> TaskRepository {
-        FakeStorage.makeRepository(api: PreviewTaskApi(result: .success(AppDependencies.previewTasks)), dateProvider: dateProvider)
+        let tasks = MapDebug.isFrozen ? MapDebug.fixtureTasks : AppDependencies.previewTasks
+        return FakeStorage.makeRepository(api: PreviewTaskApi(result: .success(tasks)), dateProvider: dateProvider)
     }
 
     /// Gives the configured tasks a voice note whose "audio file" is a text file holding the duration.
     func seedIfNeeded(_ repository: TaskRepository) {
+        MapDebug.seed(repository)
         for (taskId, durationMs) in seed {
             guard let task = repository.task(id: taskId), task.voiceNote == nil else { continue }
             let name = "note-seed-\(taskId).m4a"

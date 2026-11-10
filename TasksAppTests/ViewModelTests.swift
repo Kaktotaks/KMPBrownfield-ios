@@ -18,6 +18,14 @@ final class ViewModelTests: XCTestCase {
         return AppDependencies(repository: repository, dateProvider: clock)
     }
 
+    /// Shared 0.9.0 gives not-done tasks a time + place on the first seed and moves some to today / tomorrow (demo route).
+    /// Tests that assert a task's own due date add enough not-done tasks on those days so theirs stay untouched.
+    private var demoRoutePadding: [TaskItem] {
+        let tomorrow = LocalDate(year: 2026, month: 10, day: 31)
+        return (0..<5).map { TaskItem(id: Int32(100 + $0), title: "Today \($0)", notes: "", priority: .low, dueDate: today, isDone: false) }
+            + (0..<4).map { TaskItem(id: Int32(110 + $0), title: "Tomorrow \($0)", notes: "", priority: .low, dueDate: tomorrow, isDone: false) }
+    }
+
     /// `uiState` uses stateIn(WhileSubscribed): it reaches Swift asynchronously via the bridge's loop.
     private func rows(of model: TasksApp.TaskListViewModel, where condition: ([TaskRowItem]) -> Bool) async throws -> [TaskRowItem]? {
         for _ in 0..<40 {
@@ -33,7 +41,7 @@ final class ViewModelTests: XCTestCase {
         let app = makeApp(tasks: [
             TaskItem(id: 1, title: "Buy milk", notes: "", priority: .high, dueDate: oct29, isDone: false),
             TaskItem(id: 2, title: "Call mom", notes: "", priority: .low, dueDate: today, isDone: true),
-        ])
+        ] + demoRoutePadding)
         let model = app.makeTaskListViewModel()
         guard case .loading = model.content else {
             return XCTFail("expected Loading before load")
@@ -41,7 +49,7 @@ final class ViewModelTests: XCTestCase {
 
         await app.loadIfNeeded()
 
-        let loaded = try await rows(of: model) { $0.count == 2 }
+        let loaded = try await rows(of: model) { $0.count == 11 }?.filter { $0.id <= 2 }
         XCTAssertEqual(loaded, [
             TaskRowItem(id: 1, title: "Buy milk", dueDate: "29 Oct 2026", isOverdue: true,
                         isDone: false, priority: .high),
@@ -88,7 +96,7 @@ final class ViewModelTests: XCTestCase {
     func testTaskDetailViewModelDetails() async throws {
         let app = makeApp(tasks: [
             TaskItem(id: 7, title: "Pay rent", notes: "", priority: .medium, dueDate: oct29, isDone: false),
-        ])
+        ] + demoRoutePadding)
         await app.loadIfNeeded()
         // Kotlin initialValue reads repository.task(id) synchronously.
         let model = app.makeTaskDetailViewModel(taskId: 7)

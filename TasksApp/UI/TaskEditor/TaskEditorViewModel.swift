@@ -18,6 +18,11 @@ final class TaskEditorViewModel: ObservableObject {
     /// The voice-note card of this sheet (`Draft` target): nothing is written until `save()`.
     let voice: VoiceNoteCardViewModel
 
+    /// Address search of the Place row (a shared `PlaceSearchViewModel`), alive while its sheet is open.
+    @Published var placeSearch: PlaceSearchModel?
+    /// Set by `AppDependencies`: creates the search view model (shared `Geocoder` + app language).
+    var makePlaceSearch: (() -> PlaceSearchModel?)?
+
     private var forwarding: AnyCancellable?
     private let shared: TaskEditorModel
 
@@ -58,6 +63,49 @@ final class TaskEditorViewModel: ObservableObject {
     /// SwiftUI `DatePicker` works with `Date`, Kotlin with `LocalDate` (IosDates helpers).
     var dueDate: Binding<Date> {
         shared.binding(\.dueDate, get: \.asDate) { $0.onDueDateChange(value: $1.asLocalDate) }
+    }
+
+    // MARK: - Time and place (Map feature)
+
+    /// "16:30", or "No time".
+    var timeText: String { shared.state.time.map(MapFormat.clock) ?? MapFormat.tr("map_no_time") }
+    var hasTime: Bool { shared.state.time != nil }
+
+    /// Wheel value; while there is no time it shows 09:00 (the first change sets it).
+    var timeDate: Binding<Date> {
+        Binding(
+            get: { [shared] in
+                let state = shared.state
+                let time = state.time ?? IosDates.shared.localTime(hour: 9, minute: 0)
+                return IosDates.shared.toDate(localDate: state.dueDate, localTime: time)
+            },
+            set: { [shared] date in
+                shared.send { $0.onTimeChange(value: IosDates.shared.toLocalTime(date: date)) }
+            }
+        )
+    }
+
+    func setDefaultTimeIfNeeded() {
+        guard !hasTime else { return }
+        shared.send { $0.onTimeChange(value: IosDates.shared.localTime(hour: 9, minute: 0)) }
+    }
+
+    func clearTime() { shared.send { $0.onTimeChange(value: nil) } }
+
+    /// The place's short address, nil when the task has none.
+    var placeAddress: String? { shared.state.place?.address }
+
+    func openPlaceSearch() { placeSearch = makePlaceSearch?() }
+    func closePlaceSearch() { placeSearch = nil }
+
+    func choosePlace(_ place: Place) {
+        shared.send { $0.onPlaceChange(value: place) }
+        placeSearch = nil
+    }
+
+    func clearPlace() {
+        shared.send { $0.onPlaceChange(value: nil) }
+        placeSearch = nil
     }
 
     // MARK: - Intents

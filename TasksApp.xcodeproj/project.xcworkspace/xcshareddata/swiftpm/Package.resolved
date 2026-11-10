@@ -1,13 +1,22 @@
 {
-  "originHash" : "affca74f1a665ae47134c31dd421acc62b5cf1794da2f5f0456566786fa220ba",
+  "originHash" : "3452f803fc933c1cdc0c824691e7698b2d74eb95549d21e693c9a065355c8be7",
   "pins" : [
     {
       "identity" : "kmpbrownfield-shared",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Kaktotaks/KMPBrownfield-shared",
       "state" : {
-        "revision" : "e9b810ea7e1fc70018d52ff41c643e3c58479031",
-        "version" : "0.8.0"
+        "revision" : "18207184954e0aa73aa3cdeed77059ba44053dd8",
+        "version" : "0.9.0"
+      }
+    },
+    {
+      "identity" : "maplibre-gl-native-distribution",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/maplibre/maplibre-gl-native-distribution",
+      "state" : {
+        "revision" : "c2e6e6bd24efa037a8ab13463d8ad047b929eb9f",
+        "version" : "7.0.0"
       }
     }
   ],
