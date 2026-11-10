@@ -4,12 +4,15 @@ import SwiftUI
 struct MapTab: View {
     let app: AppDependencies
     let isMapEnabled: Bool
+    /// Set while the task / new-task sheet is open: the root hides (not removes) the tab bar so the map shows through
+    /// around the sheet's rounded corners, as on Android.
+    @Binding var barHidden: Bool
     @State private var model: MapViewModel?
 
     var body: some View {
         Group {
             if let model {
-                MapScreen(model: model, isMapEnabled: isMapEnabled)
+                MapScreen(model: model, isMapEnabled: isMapEnabled, barHidden: $barHidden)
             } else {
                 Color.tk.bg.ignoresSafeArea()
             }

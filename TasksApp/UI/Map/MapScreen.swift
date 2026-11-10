@@ -12,6 +12,7 @@ struct MapScreen: View {
     /// False while the splash holds: the map view (and its tile requests) is only created once the splash is gone, so
     /// loading tiles can never delay the splash exit.
     let isMapEnabled: Bool
+    @Binding var barHidden: Bool
 
     @State private var actions = MapActions()
     @State private var reloadToken = 0
@@ -20,16 +21,22 @@ struct MapScreen: View {
     private static let bannerHeight: CGFloat = 64
     private static let moveCardHeight: CGFloat = 100
 
+    /// Height of the custom tab bar that floats over the bottom of this full-height screen. The overlays end above
+    /// it; the map continues under it (and the home indicator), so it shows through around the floating sheets'
+    /// rounded corners. All bottom camera paddings include bar + home indicator, so the visible band stays put.
+    @Environment(\.mapBarHeight) private var barHeight
+
     var body: some View {
         GeometryReader { geo in
             let safe = geo.safeAreaInsets
+            let bleed = barHeight + safe.bottom
             let layout = MapLayout(
                 top: safe.top + 4 + Self.selectorHeight + 24,
-                fitBottom: safe.bottom + RouteSheetView.collapsedHeight + 24,
-                taskSheetBottom: 560,
-                draftSheetBottom: 700,
+                fitBottom: bleed + RouteSheetView.collapsedHeight + 24,
+                taskSheetBottom: bleed + 560,
+                draftSheetBottom: bleed + 700,
                 moveTop: safe.top + 4 + Self.bannerHeight + 16,
-                moveBottom: safe.bottom + 16 + Self.moveCardHeight + 16
+                moveBottom: bleed + 16 + Self.moveCardHeight + 16
             )
             ZStack(alignment: .bottom) {
                 topOverlays()
@@ -45,7 +52,7 @@ struct MapScreen: View {
                 } else if showsRouteSheet {
                     RouteSheetView(
                         model: model,
-                        availableHeight: geo.size.height - 8,
+                        availableHeight: geo.size.height - barHeight - 8,
                         onRecenter: { model.recenter() }
                     )
                     .zIndex(20)
@@ -53,13 +60,13 @@ struct MapScreen: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .frame(width: geo.size.width, height: geo.size.height)
+            .frame(width: geo.size.width, height: geo.size.height - barHeight)
             // Full screen, under the status bar and the tab bar. A background never changes the layout size, so the
             // overlays above keep the safe-area frame.
             .background(alignment: .bottom) {
                 mapLayer(layout)
                     .frame(width: geo.size.width, height: geo.size.height + safe.top + safe.bottom)
-                    .offset(y: safe.bottom)
+                    .offset(y: bleed)
                     .accessibilitySortPriority(1)
             }
         }
@@ -77,6 +84,8 @@ struct MapScreen: View {
             }
         }
         .onAppear { wireActions() }
+        .onChange(of: model.taskSheet != nil || model.draft != nil) { _, open in barHidden = open }
+        .onDisappear { barHidden = false }
     }
 
     private var showsRouteSheet: Bool {
@@ -178,7 +187,7 @@ private extension View {
             .presentationDetents([.height(height), .large])
             .presentationBackgroundInteraction(.enabled(upThrough: .height(height)))
             .presentationDragIndicator(.visible)
-            .presentationCornerRadius(Radius.xl)
+            // No fixed corner radius: the system inset sheet uses corners concentric with the device's screen corners.
             .presentationBackground(Color.tk.bg)
     }
 }
@@ -189,4 +198,14 @@ private struct ColorSchemeReader<Content: View>: View {
     @ViewBuilder let content: (Bool) -> Content
 
     var body: some View { content(colorScheme == .dark) }
+}
+
+private struct MapBarHeightKey: EnvironmentKey { static let defaultValue: CGFloat = 0 }
+
+extension EnvironmentValues {
+    /// Set by `RootView`: the height of the tab bar that floats over the bottom of the Map screen.
+    var mapBarHeight: CGFloat {
+        get { self[MapBarHeightKey.self] }
+        set { self[MapBarHeightKey.self] = newValue }
+    }
 }

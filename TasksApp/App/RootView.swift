@@ -16,6 +16,10 @@ struct RootView: View {
     @State private var taskList: TaskListViewModel
     @State private var splash: SplashPhase
     @State private var tab: RootTab
+    /// The Map's task / new-task sheet is open: the bar is invisible (layout kept) so the map shows around the sheet.
+    @State private var barHiddenByMap = false
+    /// Height of `TKTabBar` above the home indicator (measured); tabs inset their content by it.
+    @State private var barHeight: CGFloat = TKTabBarMetrics.barHeight + TKTabBarMetrics.dividerHeight
 
     init(app: AppDependencies) {
         self.app = app
@@ -57,24 +61,33 @@ struct RootView: View {
             // Tab bar below the tabs (as the Android Scaffold bottomBar). The tabs stay alive in a TabView whose system
             // bar is hidden, so each keeps its own NavigationStack and state; the bar is `TKTabBar` (copy of the
             // Android M3 NavigationBar). It is a sibling under the splash overlay, like the system bar was.
-            VStack(spacing: 0) {
+            // The bar floats over the bottom of a full-height TabView (so the Map's map can continue under it and show
+            // around the floating sheets, like Android's Scaffold); Tasks and Stats pad themselves by the bar height.
+            ZStack(alignment: .bottom) {
                 TabView(selection: $tab) {
                     TaskListScreen(model: taskList)
+                        .padding(.bottom, barHeight)
                         .toolbar(.hidden, for: .tabBar)
                         .tag(RootTab.tasks)
 
                     // Created on first display; the map view itself waits for the splash to finish (`isMapEnabled`),
                     // so tile requests never compete with the launch hand-over.
-                    MapTab(app: app, isMapEnabled: splash == .done)
+                    MapTab(app: app, isMapEnabled: splash == .done, barHidden: $barHiddenByMap)
+                        .environment(\.mapBarHeight, barHeight)
                         .toolbar(.hidden, for: .tabBar)
                         .tag(RootTab.map)
 
                     StatsScreen(model: app.makeStatsViewModel())
+                        .padding(.bottom, barHeight)
                         .toolbar(.hidden, for: .tabBar)
                         .tag(RootTab.stats)
                 }
 
                 TKTabBar(items: Self.tabItems, selection: $tab)
+                    .opacity(barHiddenByMap ? 0 : 1)
+                    .allowsHitTesting(!barHiddenByMap)
+                    .accessibilityHidden(barHiddenByMap)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
             }
             // VoiceOver stays on the list only after the overlay is gone.
             .accessibilityHidden(splash != .done)
