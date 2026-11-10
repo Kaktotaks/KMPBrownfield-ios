@@ -2,6 +2,7 @@
   "sourceLanguage" : "en",
   "strings" : {
     "map_a11y_add_here" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -18,6 +19,7 @@
       }
     },
     "map_a11y_choose_day" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -34,6 +36,7 @@
       }
     },
     "map_a11y_close" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -50,6 +53,7 @@
       }
     },
     "map_a11y_collapse" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -66,6 +70,7 @@
       }
     },
     "map_a11y_done" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -82,6 +87,7 @@
       }
     },
     "map_a11y_dropped_pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -98,6 +104,7 @@
       }
     },
     "map_a11y_expand" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -114,6 +121,7 @@
       }
     },
     "map_a11y_map" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -130,6 +138,7 @@
       }
     },
     "map_a11y_move_center" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -146,6 +155,7 @@
       }
     },
     "map_a11y_next_day" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -162,6 +172,7 @@
       }
     },
     "map_a11y_next_stop" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -178,6 +189,7 @@
       }
     },
     "map_a11y_overdue" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -194,6 +206,7 @@
       }
     },
     "map_a11y_past" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -210,6 +223,7 @@
       }
     },
     "map_a11y_prev_day" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -226,6 +240,7 @@
       }
     },
     "map_a11y_priority" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -242,6 +257,7 @@
       }
     },
     "map_a11y_route_sheet" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -258,6 +274,7 @@
       }
     },
     "map_a11y_show_pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -274,6 +291,7 @@
       }
     },
     "map_a11y_stop" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -290,6 +308,7 @@
       }
     },
     "map_a11y_stops_list" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -306,6 +325,7 @@
       }
     },
     "map_a11y_unscheduled" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -322,6 +342,7 @@
       }
     },
     "map_add_place" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -338,6 +359,7 @@
       }
     },
     "map_cancel" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -354,6 +376,7 @@
       }
     },
     "map_change_place" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -370,6 +393,7 @@
       }
     },
     "map_chip_failed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -386,6 +410,7 @@
       }
     },
     "map_chip_loading" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -402,6 +427,7 @@
       }
     },
     "map_chip_offline" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -418,6 +444,7 @@
       }
     },
     "map_clear_place" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -434,6 +461,8 @@
       }
     },
     "map_day_format" : {
+      "comment" : "DateFormatter pattern of the day label: Wed 4 Nov / ср, 4 лист.",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -447,10 +476,10 @@
             "value" : "EEE, d MMM"
           }
         }
-      },
-      "comment" : "DateFormatter pattern of the day label: Wed 4 Nov / ср, 4 лист."
+      }
     },
     "map_delete" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -467,6 +496,7 @@
       }
     },
     "map_distance_km" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -483,6 +513,7 @@
       }
     },
     "map_distance_m" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -499,6 +530,7 @@
       }
     },
     "map_done_state" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -515,6 +547,7 @@
       }
     },
     "map_dropped_pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -531,6 +564,7 @@
       }
     },
     "map_duration_h_min" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -547,6 +581,7 @@
       }
     },
     "map_duration_min" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -563,6 +598,7 @@
       }
     },
     "map_edit" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -579,6 +615,7 @@
       }
     },
     "map_editor_place" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -595,6 +632,7 @@
       }
     },
     "map_editor_time" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -611,6 +649,7 @@
       }
     },
     "map_empty_message" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -627,6 +666,7 @@
       }
     },
     "map_empty_title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -643,6 +683,7 @@
       }
     },
     "map_leave_by" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -659,6 +700,7 @@
       }
     },
     "map_left" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -675,6 +717,7 @@
       }
     },
     "map_leg" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -691,6 +734,7 @@
       }
     },
     "map_locating" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -707,6 +751,7 @@
       }
     },
     "map_mark_done" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -723,6 +768,7 @@
       }
     },
     "map_move_banner" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -739,6 +785,7 @@
       }
     },
     "map_move_done" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -755,6 +802,7 @@
       }
     },
     "map_move_hint" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -771,6 +819,7 @@
       }
     },
     "map_move_new_place" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -787,6 +836,7 @@
       }
     },
     "map_move_pin" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -803,6 +853,7 @@
       }
     },
     "map_new_task" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -819,6 +870,7 @@
       }
     },
     "map_next" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -835,6 +887,7 @@
       }
     },
     "map_next_no_eta" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -851,6 +904,7 @@
       }
     },
     "map_no_time" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -867,6 +921,7 @@
       }
     },
     "map_recenter" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -883,6 +938,7 @@
       }
     },
     "map_retry" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -899,6 +955,7 @@
       }
     },
     "map_save" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -915,6 +972,7 @@
       }
     },
     "map_search_address" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -931,6 +989,7 @@
       }
     },
     "map_search_failed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -947,6 +1006,7 @@
       }
     },
     "map_search_hint" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -963,6 +1023,7 @@
       }
     },
     "map_search_none" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -979,6 +1040,7 @@
       }
     },
     "map_search_title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -995,6 +1057,7 @@
       }
     },
     "map_sheet_today" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1011,6 +1074,7 @@
       }
     },
     "map_sheet_tomorrow" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1027,6 +1091,7 @@
       }
     },
     "map_sheet_yesterday" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1043,6 +1108,7 @@
       }
     },
     "map_start" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1059,6 +1125,7 @@
       }
     },
     "map_start_a11y" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1075,6 +1142,7 @@
       }
     },
     "map_start_address" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1091,6 +1159,7 @@
       }
     },
     "map_stop_done" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1107,6 +1176,7 @@
       }
     },
     "map_stop_of" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1123,6 +1193,7 @@
       }
     },
     "map_stop_overdue" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1139,6 +1210,7 @@
       }
     },
     "map_stops_count" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -1161,12 +1233,6 @@
         "uk" : {
           "variations" : {
             "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld зупинка"
-                }
-              },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
@@ -1177,6 +1243,12 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld зупинок"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld зупинка"
                 }
               },
               "other" : {
@@ -1191,6 +1263,7 @@
       }
     },
     "map_summary_distance_only" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1207,6 +1280,7 @@
       }
     },
     "map_summary_empty" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1223,6 +1297,7 @@
       }
     },
     "map_summary_fallback" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1239,6 +1314,7 @@
       }
     },
     "map_summary_loading" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1255,6 +1331,7 @@
       }
     },
     "map_summary_ready" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1271,6 +1348,7 @@
       }
     },
     "map_tab" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1287,6 +1365,7 @@
       }
     },
     "map_time" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1303,6 +1382,7 @@
       }
     },
     "map_time_set" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1319,6 +1399,7 @@
       }
     },
     "map_today" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1335,6 +1416,7 @@
       }
     },
     "map_tomorrow" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1351,6 +1433,7 @@
       }
     },
     "map_unscheduled_stop" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1367,6 +1450,7 @@
       }
     },
     "map_when_other" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1383,6 +1467,7 @@
       }
     },
     "map_when_stop" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1399,6 +1484,7 @@
       }
     },
     "map_when_today" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1415,6 +1501,7 @@
       }
     },
     "map_yesterday" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
