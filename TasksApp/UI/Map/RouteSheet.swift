@@ -145,6 +145,12 @@ enum RouteSheetMetrics {
     static func shouldExpand(start: CGFloat, predictedTranslation: CGFloat, expanded: CGFloat) -> Bool {
         (start - predictedTranslation) > (collapsedHeight + expanded) / 2
     }
+
+    /// A short tap on empty map steps the expanded sheet down to the collapsed state. Not while a pin is selected
+    /// (that tap deselects), nor during the Move flow or a new-task draft, which keep their own behaviour.
+    static func collapsesOnMapTap(expanded: Bool, hasSelection: Bool, isMoving: Bool, hasDraft: Bool) -> Bool {
+        expanded && !hasSelection && !isMoving && !hasDraft
+    }
 }
 
 /// Route sheet: a custom draggable sheet above the tab bar (detents 176 / 640). Opens collapsed (summary + next stop);

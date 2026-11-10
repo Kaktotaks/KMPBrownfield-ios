@@ -154,8 +154,17 @@ struct MapScreen: View {
         actions.onLongPress = { [weak model] coord in model?.longPress(coord) }
         actions.onAddHere = { [weak model] coord in model?.addTaskHere(at: coord) }
         actions.onBackgroundTap = { [weak model] in
-            guard let model, model.state.selectedStop != nil else { return }
-            model.clearSelection()
+            guard let model else { return }
+            if model.state.selectedStop != nil {
+                model.clearSelection()
+            } else if RouteSheetMetrics.collapsesOnMapTap(
+                expanded: model.state.sheetExpanded,
+                hasSelection: false,
+                isMoving: model.state.move != nil,
+                hasDraft: model.state.newTaskDraft != nil
+            ) {
+                model.setSheetExpanded(false)
+            }
         }
         actions.onMoveCenter = { [weak model] coord in model?.updateMoveCandidate(coord) }
         actions.onOffline = { [weak model] offline in model?.reportTilesOffline(offline) }

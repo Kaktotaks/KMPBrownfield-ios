@@ -230,6 +230,14 @@ final class MapViewModelTests: XCTestCase {
 }
 
 final class RouteSheetMetricsTests: XCTestCase {
+    func testMapTapCollapsesOnlyAnExpandedSheetWithNothingElseActive() {
+        XCTAssertTrue(RouteSheetMetrics.collapsesOnMapTap(expanded: true, hasSelection: false, isMoving: false, hasDraft: false))
+        XCTAssertFalse(RouteSheetMetrics.collapsesOnMapTap(expanded: false, hasSelection: false, isMoving: false, hasDraft: false))
+        XCTAssertFalse(RouteSheetMetrics.collapsesOnMapTap(expanded: true, hasSelection: true, isMoving: false, hasDraft: false))
+        XCTAssertFalse(RouteSheetMetrics.collapsesOnMapTap(expanded: true, hasSelection: false, isMoving: true, hasDraft: false))
+        XCTAssertFalse(RouteSheetMetrics.collapsesOnMapTap(expanded: true, hasSelection: false, isMoving: false, hasDraft: true))
+    }
+
     private let expanded: CGFloat = 640
 
     func testExpandedTargetIsCappedToTheSpaceAboveTheTabBar() {
