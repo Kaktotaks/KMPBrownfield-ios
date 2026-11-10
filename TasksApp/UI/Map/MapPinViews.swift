@@ -87,23 +87,27 @@ struct TaskPinView: View {
             .frame(width: 56, height: 50, alignment: .topLeading)
 
             ZStack(alignment: .topLeading) {
-                // Tail: a rotated 10 pt square with a 2 pt ring offset (2, 2).
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(MapColors.pinRing)
-                    .frame(width: 10, height: 10)
-                    .offset(x: 2, y: 2)
-                    .rotationEffect(.degrees(45))
-                    .offset(x: 23, y: 33)
+                // One teardrop: the 2 pt ring and drop shadow are drawn around the head AND the tail together
+                // (ring layer first), then the coloured tail and head on top, so the tail reads as part of the bubble.
+                ZStack(alignment: .topLeading) {
+                    // Tail ring: the 10 pt tail square grown by 2 pt on every side, rotated 45° about its centre.
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(MapColors.pinRing)
+                        .frame(width: 14, height: 14)
+                        .rotationEffect(.degrees(45))
+                        .offset(x: 21, y: 31)
+                    Circle()
+                        .fill(MapColors.pinRing)
+                        .frame(width: 40, height: 40)
+                        .offset(x: 8, y: 2)
+                }
+                .compositingGroup()
+                .shadow(color: .black.opacity(model.isLifted ? 0.30 : 0.22), radius: model.isLifted ? 9 : 3, x: 0, y: model.isLifted ? 10 : 2)
                 RoundedRectangle(cornerRadius: 2, style: .continuous)
                     .fill(headFill)
                     .frame(width: 10, height: 10)
                     .rotationEffect(.degrees(45))
                     .offset(x: 23, y: 33)
-                Circle()
-                    .fill(MapColors.pinRing)
-                    .frame(width: 40, height: 40)
-                    .shadow(color: .black.opacity(model.isLifted ? 0.30 : 0.22), radius: model.isLifted ? 9 : 3, x: 0, y: model.isLifted ? 10 : 2)
-                    .offset(x: 8, y: 2)
                 Circle()
                     .fill(headFill)
                     .frame(width: 36, height: 36)
