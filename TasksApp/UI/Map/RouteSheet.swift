@@ -119,67 +119,143 @@ struct RouteStopRowView: View {
     }
 }
 
+/// Pure geometry of the route sheet drag (detents 176 / 640 capped to the space above the tab bar). Kept free of
+/// SwiftUI so it can be unit-tested.
+enum RouteSheetMetrics {
+    static let collapsedHeight: CGFloat = 176
+    static let expandedHeight: CGFloat = 640
+
+    static func expandedTarget(availableHeight: CGFloat) -> CGFloat {
+        min(expandedHeight, max(collapsedHeight, availableHeight - 24))
+    }
+
+    /// Live height while dragging: follows the finger, clamped to the two detents.
+    static func liveHeight(start: CGFloat, translation: CGFloat, expanded: CGFloat) -> CGFloat {
+        min(expanded, max(collapsedHeight, start - translation))
+    }
+
+    /// 0 collapsed ... 1 expanded; drives the cross-fade between the next-stop card and the list.
+    static func progress(height: CGFloat, expanded: CGFloat) -> CGFloat {
+        let span = expanded - collapsedHeight
+        guard span > 0 else { return 0 }
+        return min(1, max(0, (height - collapsedHeight) / span))
+    }
+
+    /// Where the sheet comes to rest with the drag's velocity: past the midpoint of the detents it expands.
+    static func shouldExpand(start: CGFloat, predictedTranslation: CGFloat, expanded: CGFloat) -> Bool {
+        (start - predictedTranslation) > (collapsedHeight + expanded) / 2
+    }
+}
+
 /// Route sheet: a custom draggable sheet above the tab bar (detents 176 / 640). Opens collapsed (summary + next stop);
 /// the full list is the accessible equivalent of the map.
+///
+/// Drag performance: the sheet content is laid out ONCE at the expanded height and the drag only changes an `offset`
+/// and two opacities. The header, next card, list and empty card are separate `View`s that observe the model
+/// themselves, so SwiftUI skips their bodies while `liveHeight` changes every frame (before, each frame recomputed
+/// `model.rows`, relaid out the list, swapped the next card for a fresh `ScrollView` and re-rendered a shadow over
+/// the whole content).
 struct RouteSheetView: View {
     @ObservedObject var model: MapViewModel
     /// Available height above the tab bar (the expanded detent is capped to it).
     let availableHeight: CGFloat
     let onRecenter: () -> Void
 
-    static let collapsedHeight: CGFloat = 176
-    static let expandedHeight: CGFloat = 640
+    static let collapsedHeight = RouteSheetMetrics.collapsedHeight
+    static let expandedHeight = RouteSheetMetrics.expandedHeight
 
     @State private var dragStartHeight: CGFloat?
     @State private var liveHeight: CGFloat?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
 
-    private var expandedTarget: CGFloat { min(Self.expandedHeight, max(Self.collapsedHeight, availableHeight - 24)) }
+    private var expandedTarget: CGFloat { RouteSheetMetrics.expandedTarget(availableHeight: availableHeight) }
     private var restingHeight: CGFloat { model.state.sheetExpanded ? expandedTarget : Self.collapsedHeight }
     private var height: CGFloat { liveHeight ?? restingHeight }
-    private var showsList: Bool { height > Self.collapsedHeight + 40 || model.state.sheetExpanded }
 
     var body: some View {
+        let expanded = expandedTarget
+        let progress = RouteSheetMetrics.progress(height: height, expanded: expanded)
+        let isEmpty = model.isEmptyDay
+        let isExpanded = model.state.sheetExpanded
+        let sheetShape = UnevenRoundedRectangle(topLeadingRadius: Radius.xl, topTrailingRadius: Radius.xl, style: .continuous)
+
         VStack(spacing: 0) {
             VStack(spacing: 0) {
                 Capsule().fill(MapColors.grabber).frame(width: 36, height: 5).padding(.top, 6)
                     .frame(height: 11)
-                header.padding(.horizontal, 16).padding(.top, 8)
+                RouteSheetHeader(model: model, onRecenter: onRecenter).padding(.horizontal, 16).padding(.top, 8)
             }
             .contentShape(Rectangle())
             .gesture(dragGesture)
             .accessibilityElement(children: .contain)
 
-            VStack(spacing: 0) {
-                if model.isEmptyDay {
-                    emptyCard.padding(.horizontal, 16).padding(.top, 12)
-                } else if showsList {
-                    list
-                } else if let next = model.next {
-                    nextCard(next).padding(.horizontal, 16).padding(.top, 12)
+            ZStack(alignment: .top) {
+                if isEmpty {
+                    RouteEmptyCard().padding(.horizontal, 16).padding(.top, 12)
+                } else {
+                    RouteNextCardSlot(model: model)
+                        .opacity(1 - progress)
+                        .allowsHitTesting(progress < 0.5)
+                        .accessibilityHidden(isExpanded)
+                    RouteListSlot(model: model)
+                        .opacity(progress)
+                        .allowsHitTesting(isExpanded)
+                        .accessibilityHidden(!isExpanded)
                 }
             }
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: height, alignment: .top)
-        .background(Color.tk.bg)
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: Radius.xl, topTrailingRadius: Radius.xl, style: .continuous))
+        // Laid out at the full detent; only the offset below follows the finger.
+        .frame(height: expanded, alignment: .top)
+        .background {
+            // The shadow lives on a plain shape (cheap), not on the whole content.
+            sheetShape.fill(Color.tk.bg)
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0.6 : 0.12), radius: 12, x: 0, y: -6)
+        }
         .overlay(alignment: .top) {
-            UnevenRoundedRectangle(topLeadingRadius: Radius.xl, topTrailingRadius: Radius.xl, style: .continuous)
+            sheetShape
                 .strokeBorder(Color.tk.border, lineWidth: 1)
                 .mask(alignment: .top) { Rectangle().frame(height: 2) }
         }
-        .shadow(color: .black.opacity(colorScheme == .dark ? 0.6 : 0.12), radius: 12, x: 0, y: -6)
+        .offset(y: expanded - height)
+        // Stationary window the sheet slides in: clips what is below the tab bar, leaves room above for the shadow.
+        .frame(height: expanded, alignment: .top)
+        .mask { Rectangle().padding(.top, -24) }
         .animation(reduceMotion || liveHeight != nil ? nil : .spring(response: 0.35, dampingFraction: 0.86), value: model.state.sheetExpanded)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(MapFormat.tr("map_a11y_route_sheet"))
     }
 
-    // MARK: - Header
+    // MARK: - Drag (velocity-aware snap between the two detents)
 
-    private var header: some View {
+    private var dragGesture: some Gesture {
+        DragGesture(minimumDistance: 6)
+            .onChanged { value in
+                let start = dragStartHeight ?? restingHeight
+                dragStartHeight = start
+                liveHeight = RouteSheetMetrics.liveHeight(start: start, translation: value.translation.height, expanded: expandedTarget)
+            }
+            .onEnded { value in
+                let start = dragStartHeight ?? restingHeight
+                let expand = RouteSheetMetrics.shouldExpand(start: start, predictedTranslation: value.predictedEndTranslation.height, expanded: expandedTarget)
+                dragStartHeight = nil
+                withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.86)) {
+                    liveHeight = nil
+                    model.setSheetExpanded(expand)
+                }
+            }
+    }
+}
+
+// MARK: - Isolated content (each observes the model itself, so a drag frame does not re-run their bodies)
+
+private struct RouteSheetHeader: View {
+    @ObservedObject var model: MapViewModel
+    let onRecenter: () -> Void
+
+    var body: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(model.sheetHeading)
@@ -216,7 +292,16 @@ struct RouteSheetView: View {
         }
     }
 
-    // MARK: - Content
+}
+
+private struct RouteNextCardSlot: View {
+    @ObservedObject var model: MapViewModel
+
+    var body: some View {
+        if let next = model.next {
+            nextCard(next).padding(.horizontal, 16).padding(.top, 12)
+        }
+    }
 
     private func nextCard(_ next: MapNextStop) -> some View {
         Button { model.selectTask(next.taskId) } label: {
@@ -250,6 +335,13 @@ struct RouteSheetView: View {
         .accessibilityAddTraits(.isButton)
     }
 
+}
+
+private struct RouteListSlot: View {
+    @ObservedObject var model: MapViewModel
+
+    var body: some View { list }
+
     private var list: some View {
         let rows = model.rows
         return ScrollView {
@@ -270,6 +362,11 @@ struct RouteSheetView: View {
         .scrollDisabled(!model.state.sheetExpanded)
     }
 
+}
+
+private struct RouteEmptyCard: View {
+    var body: some View { emptyCard }
+
     private var emptyCard: some View {
         HStack(spacing: 14) {
             MapIconView(icon: .pinAdd, size: 22)
@@ -288,25 +385,4 @@ struct RouteSheetView: View {
         .accessibilityElement(children: .combine)
     }
 
-    // MARK: - Drag (velocity-aware snap between the two detents)
-
-    private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 6)
-            .onChanged { value in
-                let start = dragStartHeight ?? restingHeight
-                dragStartHeight = start
-                liveHeight = min(expandedTarget, max(Self.collapsedHeight, start - value.translation.height))
-            }
-            .onEnded { value in
-                let start = dragStartHeight ?? restingHeight
-                // Where the sheet would come to rest with its current velocity.
-                let projected = start - value.predictedEndTranslation.height
-                let expand = projected > (Self.collapsedHeight + expandedTarget) / 2
-                dragStartHeight = nil
-                withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.86)) {
-                    liveHeight = nil
-                    model.setSheetExpanded(expand)
-                }
-            }
-    }
 }

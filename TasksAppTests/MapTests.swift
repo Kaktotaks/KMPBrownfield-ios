@@ -228,3 +228,34 @@ final class MapViewModelTests: XCTestCase {
         model.cancelMove()
     }
 }
+
+final class RouteSheetMetricsTests: XCTestCase {
+    private let expanded: CGFloat = 640
+
+    func testExpandedTargetIsCappedToTheSpaceAboveTheTabBar() {
+        XCTAssertEqual(RouteSheetMetrics.expandedTarget(availableHeight: 900), 640)
+        XCTAssertEqual(RouteSheetMetrics.expandedTarget(availableHeight: 600), 576)
+        XCTAssertEqual(RouteSheetMetrics.expandedTarget(availableHeight: 100), 176)
+    }
+
+    func testLiveHeightFollowsTheFingerAndClampsToTheDetents() {
+        XCTAssertEqual(RouteSheetMetrics.liveHeight(start: 176, translation: -100, expanded: expanded), 276)
+        XCTAssertEqual(RouteSheetMetrics.liveHeight(start: 176, translation: 80, expanded: expanded), 176)
+        XCTAssertEqual(RouteSheetMetrics.liveHeight(start: 176, translation: -900, expanded: expanded), 640)
+    }
+
+    func testProgressIsZeroCollapsedAndOneExpanded() {
+        XCTAssertEqual(RouteSheetMetrics.progress(height: 176, expanded: expanded), 0)
+        XCTAssertEqual(RouteSheetMetrics.progress(height: 640, expanded: expanded), 1)
+        XCTAssertEqual(RouteSheetMetrics.progress(height: 408, expanded: expanded), 0.5, accuracy: 0.001)
+        XCTAssertEqual(RouteSheetMetrics.progress(height: 176, expanded: 176), 0)
+    }
+
+    func testFlingDecidesTheSnap() {
+        // A short drag up expands only with enough velocity; a long drag expands on its own.
+        XCTAssertFalse(RouteSheetMetrics.shouldExpand(start: 176, predictedTranslation: -100, expanded: expanded))
+        XCTAssertTrue(RouteSheetMetrics.shouldExpand(start: 176, predictedTranslation: -300, expanded: expanded))
+        XCTAssertFalse(RouteSheetMetrics.shouldExpand(start: 640, predictedTranslation: 300, expanded: expanded))
+        XCTAssertTrue(RouteSheetMetrics.shouldExpand(start: 640, predictedTranslation: 100, expanded: expanded))
+    }
+}
